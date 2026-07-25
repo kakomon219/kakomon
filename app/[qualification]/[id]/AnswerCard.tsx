@@ -1,3 +1,10 @@
+/**
+ * ファイル: app/[qualification]/[id]/AnswerCard.tsx
+ * バージョン: v0.5
+ * 更新日: 2026-07-25
+ * 内容: 解答後に「解説を見る」ボタンを表示し、タップで解説を開く方式に変更
+ */
+
 "use client";
 
 import { useState } from "react";
@@ -5,6 +12,7 @@ import type { Question } from "@/lib/supabase";
 
 export default function AnswerCard({ question }: { question: Question }) {
   const [selected, setSelected] = useState<number | null>(null);
+  const [showExplanation, setShowExplanation] = useState(false);
 
   const choices = [
     question.choice_1,
@@ -12,6 +20,7 @@ export default function AnswerCard({ question }: { question: Question }) {
     question.choice_3,
     question.choice_4,
     question.choice_5,
+    question.choice_6,
   ];
 
   const isAnswered = selected !== null;
@@ -46,7 +55,21 @@ export default function AnswerCard({ question }: { question: Question }) {
       {isAnswered && (
         <div className="result">
           <p>{isCorrect ? "✓ 正解！" : "✗ 不正解"}</p>
-          {question.explanation && <p>解説: {question.explanation}</p>}
+
+          {question.explanation && !showExplanation && (
+            <button
+              className="choice-btn"
+              onClick={() => setShowExplanation(true)}
+            >
+              解説を見る
+            </button>
+          )}
+
+          {question.explanation && showExplanation && (
+            <p>解説: {question.explanation}</p>
+          )}
+
+          {!question.explanation && <p>この問題の解説はまだ登録されていません。</p>}
         </div>
       )}
     </div>
