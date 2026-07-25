@@ -2,7 +2,7 @@
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
  * バージョン: v0.5
  * 更新日: 2026-07-25
- * 内容: 解答後に「解説を見る」ボタンを表示し、タップで解説を開く方式に変更
+ * 内容: 解答後に「解説を見る」ボタンを表示し、タップで解説を開く方式に変更。choice_6にも対応
  */
 
 "use client";
@@ -69,7 +69,9 @@ export default function AnswerCard({ question }: { question: Question }) {
             <p>解説: {question.explanation}</p>
           )}
 
-          {!question.explanation && <p>この問題の解説はまだ登録されていません。</p>}
+          {!question.explanation && (
+            <p>この問題の解説はまだ登録されていません。</p>
+          )}
         </div>
       )}
     </div>
