@@ -1,8 +1,8 @@
 /**
  * ファイル: app/[qualification]/page.tsx
- * バージョン: v0.5
+ * バージョン: v0.6
  * 更新日: 2026-07-26
- * 内容: ModeButtonsを2箇所に追加(資格全体スコープ・選択中themeスコープ)
+ * 内容: テーマ絞り込みを単一選択から複数選択(カンマ区切りのURLパラメータ、チップのトグル方式)に変更
  */
 
 import Link from "next/link";
@@ -20,7 +20,10 @@ export default async function QualificationPage({
 }) {
   const qualification = decodeURIComponent(params.qualification);
   const selectedExamRound = searchParams.exam_round;
-  const selectedTheme = searchParams.theme;
+  // テーマは "建築学,共通" のようなカンマ区切りで複数保持
+  const selectedThemes = searchParams.theme
+    ? searchParams.theme.split(",").filter(Boolean)
+    : [];
 
   const { data, error } = await supabase
     .from("questions")
@@ -44,17 +47,38 @@ export default async function QualificationPage({
     new Set(afterExamRound.map((q) => q.theme).filter(Boolean))
   ) as string[];
 
-  const filtered = selectedTheme
-    ? afterExamRound.filter((q) => q.theme === selectedTheme)
-    : afterExamRound;
+  const filtered =
+    selectedThemes.length > 0
+      ? afterExamRound.filter((q) => q.theme && selectedThemes.includes(q.theme))
+      : afterExamRound;
 
-  const buildHref = (
-    nextExamRound: string | undefined,
-    nextTheme: string | undefined
-  ) => {
+  // 級・回タブ用(単一選択、切り替え)
+  const buildExamRoundHref = (nextExamRound: string | undefined) => {
     const qs = new URLSearchParams();
     if (nextExamRound) qs.set("exam_round", nextExamRound);
-    if (nextTheme) qs.set("theme", nextTheme);
+    if (selectedThemes.length > 0) qs.set("theme", selectedThemes.join(","));
+    const qsStr = qs.toString();
+    return `/${params.qualification}${qsStr ? `?${qsStr}` : ""}`;
+  };
+
+  // テーマチップ用(複数選択、トグル)
+  const buildThemeToggleHref = (theme: string) => {
+    const isSelected = selectedThemes.includes(theme);
+    const nextThemes = isSelected
+      ? selectedThemes.filter((t) => t !== theme)
+      : [...selectedThemes, theme];
+
+    const qs = new URLSearchParams();
+    if (selectedExamRound) qs.set("exam_round", selectedExamRound);
+    if (nextThemes.length > 0) qs.set("theme", nextThemes.join(","));
+    const qsStr = qs.toString();
+    return `/${params.qualification}${qsStr ? `?${qsStr}` : ""}`;
+  };
+
+  // テーマ「全て」= 選択を全解除
+  const buildThemeClearHref = () => {
+    const qs = new URLSearchParams();
+    if (selectedExamRound) qs.set("exam_round", selectedExamRound);
     const qsStr = qs.toString();
     return `/${params.qualification}${qsStr ? `?${qsStr}` : ""}`;
   };
@@ -66,7 +90,6 @@ export default async function QualificationPage({
       </p>
       <h1>{qualification}</h1>
 
-      {/* 資格全体スコープの新しい問題/続きの問題/間違えた問題 */}
       <ModeButtons
         qualification={params.qualification}
         questionIds={questions.map((q) => q.id)}
@@ -75,7 +98,7 @@ export default async function QualificationPage({
       <p>級・回で絞り込み</p>
       <div>
         <Link
-          href={buildHref(undefined, undefined)}
+          href={buildExamRoundHref(undefined)}
           className={`tab ${!selectedExamRound ? "active" : ""}`}
         >
           全て
@@ -83,7 +106,7 @@ export default async function QualificationPage({
         {examRounds.map((r) => (
           <Link
             key={r}
-            href={buildHref(r, undefined)}
+            href={buildExamRoundHref(r)}
             className={`tab ${selectedExamRound === r ? "active" : ""}`}
           >
             {r}
@@ -91,27 +114,26 @@ export default async function QualificationPage({
         ))}
       </div>
 
-      <p>テーマで絞り込み</p>
+      <p>テーマで絞り込み(複数選択可)</p>
       <div>
         <Link
-          href={buildHref(selectedExamRound, undefined)}
-          className={`tab ${!selectedTheme ? "active" : ""}`}
+          href={buildThemeClearHref()}
+          className={`tab ${selectedThemes.length === 0 ? "active" : ""}`}
         >
           全て
         </Link>
         {themes.map((t) => (
           <Link
             key={t}
-            href={buildHref(selectedExamRound, t)}
-            className={`tab ${selectedTheme === t ? "active" : ""}`}
+            href={buildThemeToggleHref(t)}
+            className={`tab ${selectedThemes.includes(t) ? "active" : ""}`}
           >
             {t}
           </Link>
         ))}
       </div>
 
-      {/* テーマ選択中は、そのテーマ限定スコープのボタンも表示 */}
-      {selectedTheme && (
+      {selectedThemes.length > 0 && (
         <ModeButtons
           qualification={params.qualification}
           questionIds={filtered.map((q) => q.id)}
