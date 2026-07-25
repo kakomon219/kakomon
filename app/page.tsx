@@ -1,8 +1,8 @@
 /**
  * ファイル: app/page.tsx
- * バージョン: v0.3
- * 更新日: 2026-07-25
- * 内容: revalidate=0に加え、ユーザー切替リンクを追加
+ * バージョン: v0.4
+ * 更新日: 2026-07-26
+ * 内容: 画像アップロード画面へのリンクをフッターに追加
  */
 
 import Link from "next/link";
@@ -36,6 +36,11 @@ export default async function HomePage() {
           {q}
         </Link>
       ))}
+      <p style={{ marginTop: 32, fontSize: 12, color: "#999" }}>
+        <Link href="/admin/upload" style={{ color: "#999" }}>
+          画像アップロード
+        </Link>
+      </p>
     </div>
   );
 }
