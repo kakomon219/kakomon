@@ -1,14 +1,13 @@
 /**
  * app/api/upload/route.ts - 問題画像アップロードAPI
- * v0.1.0  2026-07-26  新規作成（question-imagesバケットへのアップロード、URLのみ返す）
+ * v0.2.0  2026-07-26  questionIdを受け取り、アップロードと同時にquestions.image_urlをUPDATEする処理を追加
  *
- * ディレクトリ: app/api/upload/route.ts（新規）
+ * ディレクトリ: app/api/upload/route.ts(既存・上書き)
  */
 
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-// service role keyを使うサーバー専用クライアント（RLSを回避してアップロードするため）
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -16,10 +15,10 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { base64, fileName } = await req.json()
+    const { base64, fileName, questionId } = await req.json()
 
-    if (!base64 || !fileName) {
-      return NextResponse.json({ error: "base64とfileNameが必要です" }, { status: 400 })
+    if (!base64 || !fileName || !questionId) {
+      return NextResponse.json({ error: "base64・fileName・questionIdが必要です" }, { status: 400 })
     }
 
     const match = base64.match(/^data:([^;]+);base64,(.+)$/)
@@ -37,15 +36,24 @@ export async function POST(req: NextRequest) {
       .upload(path, buffer, { contentType, upsert: true })
 
     if (uploadError) {
-      return NextResponse.json({ error: `アップロード失敗（${uploadError.message}）` }, { status: 500 })
+      return NextResponse.json({ error: `アップロード失敗(${uploadError.message})` }, { status: 500 })
     }
 
     const { data: { publicUrl } } = supabaseAdmin.storage
       .from("question-images")
       .getPublicUrl(path)
 
+    const { error: updateError } = await supabaseAdmin
+      .from("questions")
+      .update({ image_url: publicUrl })
+      .eq("id", questionId)
+
+    if (updateError) {
+      return NextResponse.json({ error: `DB更新失敗(${updateError.message})`, url: publicUrl }, { status: 500 })
+    }
+
     return NextResponse.json({ url: publicUrl })
   } catch (error: any) {
-    return NextResponse.json({ error: `Upload failed（${error?.message || error}）` }, { status: 500 })
+    return NextResponse.json({ error: `Upload failed(${error?.message || error})` }, { status: 500 })
   }
 }
