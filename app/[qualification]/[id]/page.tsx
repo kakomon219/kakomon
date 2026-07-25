@@ -1,8 +1,8 @@
 /**
  * ファイル: app/[qualification]/[id]/page.tsx
- * バージョン: v0.6
+ * バージョン: v0.7
  * 更新日: 2026-07-25
- * 内容: revalidate=0を追加し、questionsのデータキャッシュを無効化(解説が反映されない問題の対策)
+ * 内容: 同じexam_round(級)内で次の問題へループするnextHrefを算出してAnswerCardに渡す
  */
 
 import Link from "next/link";
@@ -27,12 +27,28 @@ export default async function QuestionPage({
     return <p>問題が見つかりませんでした。</p>;
   }
 
+  const { data: sameRound } = await supabase
+    .from("questions")
+    .select("id")
+    .eq("qualification", question.qualification)
+    .eq("exam_round", question.exam_round)
+    .order("id", { ascending: true });
+
+  let nextHref: string | null = null;
+  if (sameRound && sameRound.length > 0) {
+    const ids = sameRound.map((q) => q.id);
+    const currentIndex = ids.indexOf(question.id);
+    const nextIndex = (currentIndex + 1) % ids.length;
+    const nextId = ids[nextIndex];
+    nextHref = `/${params.qualification}/${nextId}`;
+  }
+
   return (
     <div>
       <p>
         <Link href={`/${params.qualification}`}>← 一覧に戻る</Link>
       </p>
-      <AnswerCard question={question} />
+      <AnswerCard question={question} nextHref={nextHref} />
     </div>
   );
 }
