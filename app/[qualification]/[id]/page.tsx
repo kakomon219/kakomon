@@ -1,8 +1,16 @@
+/**
+ * ファイル: app/[qualification]/[id]/page.tsx
+ * バージョン: v0.6
+ * 更新日: 2026-07-25
+ * 内容: revalidate=0を追加し、questionsのデータキャッシュを無効化(解説が反映されない問題の対策)
+ */
+
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import AnswerCard from "./AnswerCard";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function QuestionPage({
   params,
