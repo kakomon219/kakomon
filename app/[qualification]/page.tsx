@@ -1,12 +1,13 @@
 /**
  * ファイル: app/[qualification]/page.tsx
- * バージョン: v0.4
- * 更新日: 2026-07-25
- * 内容: 資格ごとの問題一覧。exam_round(級)とtheme(テーマ)の2段階絞り込みタブを追加
+ * バージョン: v0.5
+ * 更新日: 2026-07-26
+ * 内容: ModeButtonsを2箇所に追加(資格全体スコープ・選択中themeスコープ)
  */
 
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import ModeButtons from "./ModeButtons";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,12 @@ export default async function QualificationPage({
       </p>
       <h1>{qualification}</h1>
 
+      {/* 資格全体スコープの新しい問題/続きの問題/間違えた問題 */}
+      <ModeButtons
+        qualification={params.qualification}
+        questionIds={questions.map((q) => q.id)}
+      />
+
       <p>級・回で絞り込み</p>
       <div>
         <Link
@@ -102,6 +109,15 @@ export default async function QualificationPage({
           </Link>
         ))}
       </div>
+
+      {/* テーマ選択中は、そのテーマ限定スコープのボタンも表示 */}
+      {selectedTheme && (
+        <ModeButtons
+          qualification={params.qualification}
+          questionIds={filtered.map((q) => q.id)}
+          scopeLabel="このテーマの"
+        />
+      )}
 
       {filtered.length === 0 && <p>問題がありません。</p>}
       {filtered.map((q, i) => (
