@@ -1,79 +1,38 @@
 /**
- * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v0.5
+ * ファイル: app/[qualification]/[id]/page.tsx
+ * バージョン: v0.6
  * 更新日: 2026-07-25
- * 内容: 解答後に「解説を見る」ボタンを表示し、タップで解説を開く方式に変更。choice_6にも対応
+ * 内容: revalidate=0を追加し、questionsのデータキャッシュを無効化(解説が反映されない問題の対策)
  */
 
-"use client";
+import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import AnswerCard from "./AnswerCard";
 
-import { useState } from "react";
-import type { Question } from "@/lib/supabase";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-export default function AnswerCard({ question }: { question: Question }) {
-  const [selected, setSelected] = useState<number | null>(null);
-  const [showExplanation, setShowExplanation] = useState(false);
+export default async function QuestionPage({
+  params,
+}: {
+  params: { qualification: string; id: string };
+}) {
+  const { data: question, error } = await supabase
+    .from("questions")
+    .select("*")
+    .eq("id", params.id)
+    .single();
 
-  const choices = [
-    question.choice_1,
-    question.choice_2,
-    question.choice_3,
-    question.choice_4,
-    question.choice_5,
-    question.choice_6,
-  ];
-
-  const isAnswered = selected !== null;
-  const isCorrect = selected === question.correct_answer;
+  if (error || !question) {
+    return <p>問題が見つかりませんでした。</p>;
+  }
 
   return (
-    <div className="card">
-      <p>{question.question_text}</p>
-
-      {choices.map((choice, i) => {
-        if (!choice) return null;
-        const num = i + 1;
-        let cls = "choice-btn";
-        if (isAnswered) {
-          if (num === question.correct_answer) cls += " correct";
-          else if (num === selected) cls += " wrong";
-        } else if (num === selected) {
-          cls += " selected";
-        }
-        return (
-          <button
-            key={num}
-            className={cls}
-            disabled={isAnswered}
-            onClick={() => setSelected(num)}
-          >
-            {num}. {choice}
-          </button>
-        );
-      })}
-
-      {isAnswered && (
-        <div className="result">
-          <p>{isCorrect ? "✓ 正解！" : "✗ 不正解"}</p>
-
-          {question.explanation && !showExplanation && (
-            <button
-              className="choice-btn"
-              onClick={() => setShowExplanation(true)}
-            >
-              解説を見る
-            </button>
-          )}
-
-          {question.explanation && showExplanation && (
-            <p>解説: {question.explanation}</p>
-          )}
-
-          {!question.explanation && (
-            <p>この問題の解説はまだ登録されていません。</p>
-          )}
-        </div>
-      )}
+    <div>
+      <p>
+        <Link href={`/${params.qualification}`}>← 一覧に戻る</Link>
+      </p>
+      <AnswerCard question={question} />
     </div>
   );
 }
