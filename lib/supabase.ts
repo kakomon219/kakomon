@@ -1,8 +1,8 @@
 /**
  * ファイル: lib/supabase.ts
- * バージョン: v0.6
+ * バージョン: v0.7
  * 更新日: 2026-07-25
- * 内容: Supabaseクライアントのfetchにcache: "no-store"を明示し、Next.jsのfetchキャッシュによる表示遅延を解消
+ * 内容: Question型にtranslation(日本語訳)フィールドを追加
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -30,4 +30,5 @@ export type Question = {
   choice_6: string | null;
   correct_answer: number | null;
   explanation: string | null;
+  translation: string | null;
 };
