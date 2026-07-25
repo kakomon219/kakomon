@@ -1,8 +1,8 @@
 /**
- * app/api/pending-images/route.ts - image_url未設定の問題一覧を返すAPI
- * v0.1.0  2026-07-26  新規作成
+ * app/api/pending-images/route.ts - 画像アップロードが必要な問題一覧を返すAPI
+ * v0.2.0  2026-07-26  needs_imageフラグでの絞り込みに変更
  *
- * ディレクトリ: app/api/pending-images/route.ts(新規)
+ * ディレクトリ: app/api/pending-images/route.ts(既存・上書き)
  */
 
 import { NextResponse } from "next/server"
@@ -17,8 +17,8 @@ export async function GET() {
   const { data, error } = await supabaseAdmin
     .from("questions")
     .select("id, qualification, exam_round, question_no, question_text")
+    .eq("needs_image", true)
     .is("image_url", null)
-    .not("question_no", "is", null)
     .order("exam_round", { ascending: false })
     .order("question_no", { ascending: true })
 
