@@ -1,0 +1,54 @@
+"use client";
+
+import { useState } from "react";
+import type { Question } from "@/lib/supabase";
+
+export default function AnswerCard({ question }: { question: Question }) {
+  const [selected, setSelected] = useState<number | null>(null);
+
+  const choices = [
+    question.choice_1,
+    question.choice_2,
+    question.choice_3,
+    question.choice_4,
+    question.choice_5,
+  ];
+
+  const isAnswered = selected !== null;
+  const isCorrect = selected === question.correct_answer;
+
+  return (
+    <div className="card">
+      <p>{question.question_text}</p>
+
+      {choices.map((choice, i) => {
+        if (!choice) return null;
+        const num = i + 1;
+        let cls = "choice-btn";
+        if (isAnswered) {
+          if (num === question.correct_answer) cls += " correct";
+          else if (num === selected) cls += " wrong";
+        } else if (num === selected) {
+          cls += " selected";
+        }
+        return (
+          <button
+            key={num}
+            className={cls}
+            disabled={isAnswered}
+            onClick={() => setSelected(num)}
+          >
+            {num}. {choice}
+          </button>
+        );
+      })}
+
+      {isAnswered && (
+        <div className="result">
+          <p>{isCorrect ? "✓ 正解！" : "✗ 不正解"}</p>
+          {question.explanation && <p>解説: {question.explanation}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
