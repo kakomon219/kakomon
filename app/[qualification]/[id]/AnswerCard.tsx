@@ -1,8 +1,9 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v1.2
+ * バージョン: v1.3
  * 更新日: 2026-07-26
- * 内容: リスニング問題用に音声プレーヤーを追加(question.audio_urlがある場合のみ、問題文の上に表示)
+ * 内容: リスニング問題(theme が「リスニング」で始まる場合)は解答前にquestion_text(スクリプト)を隠し、
+ *      音声プレーヤーと選択肢のみ表示。解答後は「スクリプトを見る」ボタンで開閉できるようにした
  */
 
 "use client";
@@ -22,6 +23,7 @@ export default function AnswerCard({
   const [selected, setSelected] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
+  const [showScript, setShowScript] = useState(false);
 
   const choices = [
     question.choice_1,
@@ -34,6 +36,7 @@ export default function AnswerCard({
 
   const isAnswered = selected !== null;
   const isCorrect = selected === question.correct_answer;
+  const isListening = question.theme?.startsWith("リスニング") ?? false;
 
   const handleSelect = async (num: number) => {
     setSelected(num);
@@ -59,7 +62,11 @@ export default function AnswerCard({
         </audio>
       )}
 
-      <p>{question.question_text}</p>
+      {(!isListening || isAnswered) && <p>{question.question_text}</p>}
+
+      {isListening && !isAnswered && (
+        <p className="listening-hint">音声を聞いて答えを選んでください。</p>
+      )}
 
       {choices.map((choice, i) => {
         if (!choice) return null;
@@ -86,6 +93,12 @@ export default function AnswerCard({
       {isAnswered && (
         <div className="result">
           <p>{isCorrect ? "✓ 正解！" : "✗ 不正解"}</p>
+
+          {isListening && !showScript && (
+            <button className="choice-btn" onClick={() => setShowScript(true)}>
+              スクリプトを見る
+            </button>
+          )}
 
           {question.explanation && !showExplanation && (
             <button
