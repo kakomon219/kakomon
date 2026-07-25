@@ -1,8 +1,8 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v0.5
+ * バージョン: v0.7
  * 更新日: 2026-07-25
- * 内容: 解答後に「解説を見る」ボタンを表示し、タップで解説を開く方式に変更。choice_6にも対応
+ * 内容: 解説文をHTML(rubyタグでのふりがな表示)として描画できるよう変更
  */
 
 "use client";
@@ -66,7 +66,9 @@ export default function AnswerCard({ question }: { question: Question }) {
           )}
 
           {question.explanation && showExplanation && (
-            <p>解説: {question.explanation}</p>
+            <p
+              dangerouslySetInnerHTML={{ __html: question.explanation }}
+            />
           )}
 
           {!question.explanation && (
