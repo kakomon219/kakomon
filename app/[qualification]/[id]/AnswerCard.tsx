@@ -1,14 +1,16 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v1.0
- * 更新日: 2026-07-25
- * 内容: 「日本語訳を見る」ボタンを問題文直下から「次の問題へ」ボタンの上に移動
+ * バージョン: v1.1
+ * 更新日: 2026-07-26
+ * 内容: 選択肢をタップした瞬間に attempts テーブルへ解答記録をINSERTする処理を追加
+ *      (ログイン中ユーザーがいない場合は記録をスキップ、記録失敗時も画面表示には影響させない)
  */
 
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 import type { Question } from "@/lib/supabase";
 
 export default function AnswerCard({
@@ -34,6 +36,22 @@ export default function AnswerCard({
   const isAnswered = selected !== null;
   const isCorrect = selected === question.correct_answer;
 
+  const handleSelect = async (num: number) => {
+    setSelected(num);
+
+    const userId = localStorage.getItem("kakomon_user_id");
+    if (!userId) return; // ユーザー未選択時は記録しない
+
+    // 記録の成否は画面表示に影響させない(失敗してもUXを止めない)
+    await supabase.from("attempts").insert({
+      user_id: Number(userId),
+      question_id: question.id,
+      selected_answer: num,
+      is_correct: num === question.correct_answer,
+      answered_at: new Date().toISOString(),
+    });
+  };
+
   return (
     <div className="card">
       <p>{question.question_text}</p>
@@ -53,7 +71,7 @@ export default function AnswerCard({
             key={num}
             className={cls}
             disabled={isAnswered}
-            onClick={() => setSelected(num)}
+            onClick={() => handleSelect(num)}
           >
             {num}. {choice}
           </button>
