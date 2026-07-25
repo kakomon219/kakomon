@@ -1,16 +1,23 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v0.7
+ * バージョン: v0.8
  * 更新日: 2026-07-25
- * 内容: 解説文をHTML(rubyタグでのふりがな表示)として描画できるよう変更
+ * 内容: 解答後に「解説を見る」に加え「次の問題へ」ボタンを追加(同じexam_round内をループ)
  */
 
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { Question } from "@/lib/supabase";
 
-export default function AnswerCard({ question }: { question: Question }) {
+export default function AnswerCard({
+  question,
+  nextHref,
+}: {
+  question: Question;
+  nextHref: string | null;
+}) {
   const [selected, setSelected] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
 
@@ -73,6 +80,12 @@ export default function AnswerCard({ question }: { question: Question }) {
 
           {!question.explanation && (
             <p>この問題の解説はまだ登録されていません。</p>
+          )}
+
+          {nextHref && (
+            <Link href={nextHref} className="choice-btn">
+              次の問題へ →
+            </Link>
           )}
         </div>
       )}
