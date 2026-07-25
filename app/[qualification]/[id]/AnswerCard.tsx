@@ -1,8 +1,8 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v0.9
+ * バージョン: v1.0
  * 更新日: 2026-07-25
- * 内容: 「日本語訳を見る」ボタンを追加(タップで開閉、正誤に関わらずいつでも見られる)
+ * 内容: 「日本語訳を見る」ボタンを問題文直下から「次の問題へ」ボタンの上に移動
  */
 
 "use client";
@@ -37,19 +37,6 @@ export default function AnswerCard({
   return (
     <div className="card">
       <p>{question.question_text}</p>
-
-      {question.translation && (
-        <button
-          className="choice-btn"
-          onClick={() => setShowTranslation((prev) => !prev)}
-        >
-          {showTranslation ? "日本語訳を閉じる" : "日本語訳を見る"}
-        </button>
-      )}
-
-      {showTranslation && question.translation && (
-        <p className="translation-box">{question.translation}</p>
-      )}
 
       {choices.map((choice, i) => {
         if (!choice) return null;
@@ -94,6 +81,19 @@ export default function AnswerCard({
 
           {!question.explanation && (
             <p>この問題の解説はまだ登録されていません。</p>
+          )}
+
+          {question.translation && (
+            <button
+              className="choice-btn"
+              onClick={() => setShowTranslation((prev) => !prev)}
+            >
+              {showTranslation ? "日本語訳を閉じる" : "日本語訳を見る"}
+            </button>
+          )}
+
+          {showTranslation && question.translation && (
+            <p className="translation-box">{question.translation}</p>
           )}
 
           {nextHref && (
