@@ -1,9 +1,8 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v1.1
+ * バージョン: v1.2
  * 更新日: 2026-07-26
- * 内容: 選択肢をタップした瞬間に attempts テーブルへ解答記録をINSERTする処理を追加
- *      (ログイン中ユーザーがいない場合は記録をスキップ、記録失敗時も画面表示には影響させない)
+ * 内容: リスニング問題用に音声プレーヤーを追加(question.audio_urlがある場合のみ、問題文の上に表示)
  */
 
 "use client";
@@ -54,6 +53,12 @@ export default function AnswerCard({
 
   return (
     <div className="card">
+      {question.audio_url && (
+        <audio controls preload="none" src={question.audio_url} className="audio-player">
+          お使いのブラウザは音声再生に対応していません。
+        </audio>
+      )}
+
       <p>{question.question_text}</p>
 
       {choices.map((choice, i) => {
