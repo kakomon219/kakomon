@@ -1,0 +1,74 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+  background: #f7f7f8;
+  color: #1a1a1a;
+}
+
+main {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.card {
+  display: block;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.tab {
+  display: inline-block;
+  padding: 6px 12px;
+  margin: 0 6px 12px 0;
+  border-radius: 999px;
+  background: #eee;
+  font-size: 14px;
+}
+
+.tab.active {
+  background: #333;
+  color: #fff;
+}
+
+.choice-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 15px;
+}
+
+.choice-btn.selected {
+  border-color: #333;
+  background: #f0f0f0;
+}
+
+.choice-btn.correct {
+  border-color: #2e7d32;
+  background: #e8f5e9;
+}
+
+.choice-btn.wrong {
+  border-color: #c62828;
+  background: #ffebee;
+}
+
+.result {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff;
+}
