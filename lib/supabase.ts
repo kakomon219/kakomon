@@ -1,8 +1,8 @@
 /**
  * ファイル: lib/supabase.ts
- * バージョン: v0.5
+ * バージョン: v0.6
  * 更新日: 2026-07-25
- * 内容: Question型にchoice_6を追加(六肢択一対応)
+ * 内容: Supabaseクライアントのfetchにcache: "no-store"を明示し、Next.jsのfetchキャッシュによる表示遅延を解消
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -10,7 +10,11 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: {
+    fetch: (url, options) => fetch(url, { ...options, cache: "no-store" }),
+  },
+});
 
 export type Question = {
   id: number;
