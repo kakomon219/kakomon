@@ -1,8 +1,8 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v0.8
+ * バージョン: v0.9
  * 更新日: 2026-07-25
- * 内容: 解答後に「解説を見る」に加え「次の問題へ」ボタンを追加(同じexam_round内をループ)
+ * 内容: 「日本語訳を見る」ボタンを追加(タップで開閉、正誤に関わらずいつでも見られる)
  */
 
 "use client";
@@ -20,6 +20,7 @@ export default function AnswerCard({
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(false);
 
   const choices = [
     question.choice_1,
@@ -36,6 +37,19 @@ export default function AnswerCard({
   return (
     <div className="card">
       <p>{question.question_text}</p>
+
+      {question.translation && (
+        <button
+          className="choice-btn"
+          onClick={() => setShowTranslation((prev) => !prev)}
+        >
+          {showTranslation ? "日本語訳を閉じる" : "日本語訳を見る"}
+        </button>
+      )}
+
+      {showTranslation && question.translation && (
+        <p className="translation-box">{question.translation}</p>
+      )}
 
       {choices.map((choice, i) => {
         if (!choice) return null;
