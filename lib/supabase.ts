@@ -1,8 +1,8 @@
 /**
  * ファイル: lib/supabase.ts
- * バージョン: v0.7
- * 更新日: 2026-07-25
- * 内容: Question型にtranslation(日本語訳)フィールドを追加
+ * バージョン: v0.8
+ * 更新日: 2026-07-26
+ * 内容: Question型にaudio_url(リスニング音声URL)フィールドを追加
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -31,4 +31,5 @@ export type Question = {
   correct_answer: number | null;
   explanation: string | null;
   translation: string | null;
+  audio_url: string | null;
 };
