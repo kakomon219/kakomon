@@ -1,3 +1,10 @@
+/**
+ * ファイル: app/[qualification]/page.tsx
+ * バージョン: v0.4
+ * 更新日: 2026-07-25
+ * 内容: 資格ごとの問題一覧。exam_round(級)とtheme(テーマ)の2段階絞り込みタブを追加
+ */
+
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
@@ -8,14 +15,15 @@ export default async function QualificationPage({
   searchParams,
 }: {
   params: { qualification: string };
-  searchParams: { theme?: string };
+  searchParams: { exam_round?: string; theme?: string };
 }) {
   const qualification = decodeURIComponent(params.qualification);
+  const selectedExamRound = searchParams.exam_round;
   const selectedTheme = searchParams.theme;
 
   const { data, error } = await supabase
     .from("questions")
-    .select("id, question_text, theme")
+    .select("id, question_text, exam_round, theme")
     .eq("qualification", qualification);
 
   if (error) {
@@ -23,13 +31,32 @@ export default async function QualificationPage({
   }
 
   const questions = data ?? [];
+  const examRounds = Array.from(
+    new Set(questions.map((q) => q.exam_round).filter(Boolean))
+  ) as string[];
+
+  const afterExamRound = selectedExamRound
+    ? questions.filter((q) => q.exam_round === selectedExamRound)
+    : questions;
+
   const themes = Array.from(
-    new Set(questions.map((q) => q.theme).filter(Boolean))
+    new Set(afterExamRound.map((q) => q.theme).filter(Boolean))
   ) as string[];
 
   const filtered = selectedTheme
-    ? questions.filter((q) => q.theme === selectedTheme)
-    : questions;
+    ? afterExamRound.filter((q) => q.theme === selectedTheme)
+    : afterExamRound;
+
+  const buildHref = (
+    nextExamRound: string | undefined,
+    nextTheme: string | undefined
+  ) => {
+    const qs = new URLSearchParams();
+    if (nextExamRound) qs.set("exam_round", nextExamRound);
+    if (nextTheme) qs.set("theme", nextTheme);
+    const qsStr = qs.toString();
+    return `/${params.qualification}${qsStr ? `?${qsStr}` : ""}`;
+  };
 
   return (
     <div>
@@ -38,9 +65,29 @@ export default async function QualificationPage({
       </p>
       <h1>{qualification}</h1>
 
+      <p>級・回で絞り込み</p>
       <div>
         <Link
-          href={`/${params.qualification}`}
+          href={buildHref(undefined, undefined)}
+          className={`tab ${!selectedExamRound ? "active" : ""}`}
+        >
+          全て
+        </Link>
+        {examRounds.map((r) => (
+          <Link
+            key={r}
+            href={buildHref(r, undefined)}
+            className={`tab ${selectedExamRound === r ? "active" : ""}`}
+          >
+            {r}
+          </Link>
+        ))}
+      </div>
+
+      <p>テーマで絞り込み</p>
+      <div>
+        <Link
+          href={buildHref(selectedExamRound, undefined)}
           className={`tab ${!selectedTheme ? "active" : ""}`}
         >
           全て
@@ -48,7 +95,7 @@ export default async function QualificationPage({
         {themes.map((t) => (
           <Link
             key={t}
-            href={`/${params.qualification}?theme=${encodeURIComponent(t)}`}
+            href={buildHref(selectedExamRound, t)}
             className={`tab ${selectedTheme === t ? "active" : ""}`}
           >
             {t}
