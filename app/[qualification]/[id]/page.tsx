@@ -1,9 +1,8 @@
 /**
  * ファイル: app/[qualification]/[id]/page.tsx
- * バージョン: v0.9
+ * バージョン: v1.0
  * 更新日: 2026-07-26
- * 内容: 前へ/次へをループさせず、最初/最後の問題では該当ボタンを出さないように変更。
- *      現在の問題番号(questionNumber)と全体数(totalCount)も算出してAnswerCardに渡す
+ * 内容: 前へ/次へ・問題番号の範囲をexam_round全体からtheme単位(同じthemeの中だけ)に変更
  */
 
 import Link from "next/link";
@@ -28,11 +27,12 @@ export default async function QuestionPage({
     return <p>問題が見つかりませんでした。</p>;
   }
 
-  const { data: sameRound } = await supabase
+  const { data: sameTheme } = await supabase
     .from("questions")
     .select("id")
     .eq("qualification", question.qualification)
     .eq("exam_round", question.exam_round)
+    .eq("theme", question.theme)
     .order("id", { ascending: true });
 
   let nextHref: string | null = null;
@@ -40,8 +40,8 @@ export default async function QuestionPage({
   let questionNumber = 1;
   let totalCount = 1;
 
-  if (sameRound && sameRound.length > 0) {
-    const ids = sameRound.map((q) => q.id);
+  if (sameTheme && sameTheme.length > 0) {
+    const ids = sameTheme.map((q) => q.id);
     const currentIndex = ids.indexOf(question.id);
     totalCount = ids.length;
     questionNumber = currentIndex + 1;
