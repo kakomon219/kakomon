@@ -1,8 +1,8 @@
 /**
  * ファイル: app/globals.css
- * バージョン: v1.2
+ * バージョン: v1.3
  * 更新日: 2026-07-26
- * 内容: 前の問題へ/次の問題へボタン用の.nav-row・.nav-btnを追加
+ * 内容: .nav-rowにgapを追加し、前の問題へ/次の問題へボタンの文字がくっつく問題を修正
  */
 
 body {
@@ -110,6 +110,7 @@ a {
 .nav-row {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 12px;
 }
 
