@@ -1,9 +1,9 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v1.4
+ * バージョン: v1.5
  * 更新日: 2026-07-26
- * 内容: インラインのaudioタグをやめ、lib/AudioPlayerContext.tsx経由で
- *      ページ遷移をまたいで音声を鳴らし続ける方式に変更
+ * 内容: 解答前でも使える「← 前の問題へ」「次の問題へ →」ボタンをカード上部に追加
+ *      (リスニングは音声を聞きながら答えずに問題を行き来したいため。解答後に出る下部の「次の問題へ」はそのまま維持)
  */
 
 "use client";
@@ -17,9 +17,11 @@ import type { Question } from "@/lib/supabase";
 export default function AnswerCard({
   question,
   nextHref,
+  prevHref,
 }: {
   question: Question;
   nextHref: string | null;
+  prevHref: string | null;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -62,6 +64,19 @@ export default function AnswerCard({
 
   return (
     <div className="card">
+      <div className="nav-row">
+        {prevHref && (
+          <Link href={prevHref} className="nav-btn">
+            ← 前の問題へ
+          </Link>
+        )}
+        {nextHref && (
+          <Link href={nextHref} className="nav-btn">
+            次の問題へ →
+          </Link>
+        )}
+      </div>
+
       <p>{question.question_text}</p>
 
       {choices.map((choice, i) => {
