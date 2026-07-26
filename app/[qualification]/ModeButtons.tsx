@@ -1,9 +1,9 @@
 /**
  * ファイル: app/[qualification]/ModeButtons.tsx
- * バージョン: v0.1
+ * バージョン: v0.3
  * 更新日: 2026-07-26
- * 内容: 新規作成。新しい問題/続きの問題/間違えた問題の3ボタン。
- *      questionIds(このスコープ内の全問題id)を受け取り、ログイン中ユーザーのattemptsと突き合わせて判定する。
+ * 内容: examRound/themesを受け取り、遷移先(list画面・続きの問題の直接遷移)のURLに
+ *      絞り込み条件を引き継ぐようにした(「一覧に戻る」でリセットされる問題の対応)
  */
 
 "use client";
@@ -15,19 +15,33 @@ import { supabase } from "@/lib/supabase";
 type Props = {
   qualification: string;
   questionIds: number[];
-  scopeLabel?: string; // 例: "このテーマの" など、ボタン文言の頭に付ける
+  scopeLabel?: string;
+  examRound?: string;
+  themes?: string[];
 };
 
-export default function ModeButtons({ qualification, questionIds, scopeLabel }: Props) {
+export default function ModeButtons({
+  qualification,
+  questionIds,
+  scopeLabel,
+  examRound,
+  themes,
+}: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+
+  const filterQs = () => {
+    const qs = new URLSearchParams();
+    if (examRound) qs.set("exam_round", examRound);
+    if (themes && themes.length > 0) qs.set("theme", themes.join(","));
+    return qs;
+  };
 
   const getUserId = () => {
     const id = localStorage.getItem("kakomon_user_id");
     return id ? Number(id) : null;
   };
 
-  // このスコープ内で、ログイン中ユーザーが一度でも解答したことのある question_id 一覧を取得
   const getAnsweredIds = async (userId: number) => {
     const { data } = await supabase
       .from("attempts")
@@ -37,7 +51,6 @@ export default function ModeButtons({ qualification, questionIds, scopeLabel }: 
     return new Set((data ?? []).map((a) => a.question_id));
   };
 
-  // このスコープ内で、各問題の「最新の解答」が不正解だったもの一覧を取得
   const getLatestWrongIds = async (userId: number) => {
     const { data } = await supabase
       .from("attempts")
@@ -62,7 +75,7 @@ export default function ModeButtons({ qualification, questionIds, scopeLabel }: 
       alert("該当する問題がありません。");
       return;
     }
-    const qs = new URLSearchParams();
+    const qs = filterQs();
     qs.set("ids", ids.join(","));
     qs.set("title", title);
     router.push(`/${qualification}/list?${qs.toString()}`);
@@ -95,7 +108,9 @@ export default function ModeButtons({ qualification, questionIds, scopeLabel }: 
       alert("未解答の問題がありません。");
       return;
     }
-    router.push(`/${qualification}/${unanswered[0]}`);
+    const qs = filterQs();
+    const qsStr = qs.toString();
+    router.push(`/${qualification}/${unanswered[0]}${qsStr ? `?${qsStr}` : ""}`);
   };
 
   const handleWrong = async () => {
@@ -112,13 +127,16 @@ export default function ModeButtons({ qualification, questionIds, scopeLabel }: 
 
   return (
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "12px 0" }}>
-      <button onClick={handleNew} disabled={loading !== null}>
+      <button className="tab active" disabled>
+        {scopeLabel ?? ""}メニューから選ぶ
+      </button>
+      <button className="tab" onClick={handleNew} disabled={loading !== null}>
         {loading === "new" ? "読み込み中..." : `${scopeLabel ?? ""}新しい問題`}
       </button>
-      <button onClick={handleContinue} disabled={loading !== null}>
+      <button className="tab" onClick={handleContinue} disabled={loading !== null}>
         {loading === "continue" ? "読み込み中..." : `${scopeLabel ?? ""}続きの問題`}
       </button>
-      <button onClick={handleWrong} disabled={loading !== null}>
+      <button className="tab" onClick={handleWrong} disabled={loading !== null}>
         {loading === "wrong" ? "読み込み中..." : `${scopeLabel ?? ""}間違えた問題`}
       </button>
     </div>
