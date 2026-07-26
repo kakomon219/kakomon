@@ -1,9 +1,9 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v1.5
+ * バージョン: v1.6
  * 更新日: 2026-07-26
- * 内容: 解答前でも使える「← 前の問題へ」「次の問題へ →」ボタンをカード上部に追加
- *      (リスニングは音声を聞きながら答えずに問題を行き来したいため。解答後に出る下部の「次の問題へ」はそのまま維持)
+ * 内容: リスニング問題(themeが「リスニング」で始まる)は解答前はquestion_text(英文)を隠す。
+ *      解答後は自動で表示される。nav-rowのくっつき対策としてgapもCSS側に追加
  */
 
 "use client";
@@ -45,6 +45,7 @@ export default function AnswerCard({
 
   const isAnswered = selected !== null;
   const isCorrect = selected === question.correct_answer;
+  const isListening = question.theme?.startsWith("リスニング") ?? false;
 
   const handleSelect = async (num: number) => {
     setSelected(num);
@@ -77,7 +78,11 @@ export default function AnswerCard({
         )}
       </div>
 
-      <p>{question.question_text}</p>
+      {(!isListening || isAnswered) && <p>{question.question_text}</p>}
+
+      {isListening && !isAnswered && (
+        <p className="listening-hint">音声を聞いて答えを選んでください。</p>
+      )}
 
       {choices.map((choice, i) => {
         if (!choice) return null;
