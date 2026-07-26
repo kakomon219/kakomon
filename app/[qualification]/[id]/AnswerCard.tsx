@@ -1,8 +1,10 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v1.8
+ * バージョン: v1.9
  * 更新日: 2026-07-26
- * 内容: question.image_urlがあれば「音声を聞いて答えを選んでください」の下にイラストを表示
+ * 内容: リスニング問題は、選択肢のテキストも解答前は非表示にし、番号ボタンのみ表示する
+ *      (本番の英検リスニングは選択肢も音声のみで、印刷されていないため)。解答後は選んだ結果とともに
+ *      選択肢テキストも表示する。
  */
 
 "use client";
@@ -107,6 +109,9 @@ export default function AnswerCard({
         } else if (num === selected) {
           cls += " selected";
         }
+        // リスニング問題は解答前、選択肢のテキストを隠して番号だけにする
+        const label =
+          isListening && !isAnswered ? `${num}` : `${num}. ${choice}`;
         return (
           <button
             key={num}
@@ -114,7 +119,7 @@ export default function AnswerCard({
             disabled={isAnswered}
             onClick={() => handleSelect(num)}
           >
-            {num}. {choice}
+            {label}
           </button>
         );
       })}
