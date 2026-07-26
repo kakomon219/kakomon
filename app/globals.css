@@ -1,8 +1,8 @@
 /**
  * ファイル: app/globals.css
- * バージョン: v1.1
+ * バージョン: v1.2
  * 更新日: 2026-07-26
- * 内容: リスニング音声用の常設バー(.audio-bar)と大きめの再生/停止ボタン(.audio-stop-btn)を追加
+ * 内容: 前の問題へ/次の問題へボタン用の.nav-row・.nav-btnを追加
  */
 
 body {
@@ -105,4 +105,17 @@ a {
   color: #fff;
   font-size: 17px;
   font-weight: bold;
+}
+
+.nav-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.nav-btn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #eee;
+  font-size: 14px;
 }
