@@ -1,3 +1,10 @@
+/**
+ * ファイル: app/globals.css
+ * バージョン: v1.1
+ * 更新日: 2026-07-26
+ * 内容: リスニング音声用の常設バー(.audio-bar)と大きめの再生/停止ボタン(.audio-stop-btn)を追加
+ */
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
@@ -9,6 +16,7 @@ main {
   max-width: 480px;
   margin: 0 auto;
   padding: 16px;
+  padding-bottom: 96px;
 }
 
 a {
@@ -71,4 +79,30 @@ a {
   padding: 12px;
   border-radius: 8px;
   background: #fff;
+}
+
+.audio-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1px solid #ddd;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  z-index: 100;
+}
+
+.audio-stop-btn {
+  width: 100%;
+  max-width: 480px;
+  padding: 16px;
+  border-radius: 12px;
+  border: none;
+  background: #333;
+  color: #fff;
+  font-size: 17px;
+  font-weight: bold;
 }
