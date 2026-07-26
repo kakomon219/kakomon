@@ -1,9 +1,8 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v1.6
+ * バージョン: v1.7
  * 更新日: 2026-07-26
- * 内容: リスニング問題(themeが「リスニング」で始まる)は解答前はquestion_text(英文)を隠す。
- *      解答後は自動で表示される。nav-rowのくっつき対策としてgapもCSS側に追加
+ * 内容: 「問◯/◯問中」の問題番号表示を追加(前の問題へ/次の問題へボタンの上)
  */
 
 "use client";
@@ -18,10 +17,14 @@ export default function AnswerCard({
   question,
   nextHref,
   prevHref,
+  questionNumber,
+  totalCount,
 }: {
   question: Question;
   nextHref: string | null;
   prevHref: string | null;
+  questionNumber: number;
+  totalCount: number;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -65,11 +68,17 @@ export default function AnswerCard({
 
   return (
     <div className="card">
+      <p className="question-number">
+        問{questionNumber} / {totalCount}問中
+      </p>
+
       <div className="nav-row">
-        {prevHref && (
+        {prevHref ? (
           <Link href={prevHref} className="nav-btn">
             ← 前の問題へ
           </Link>
+        ) : (
+          <span />
         )}
         {nextHref && (
           <Link href={nextHref} className="nav-btn">
