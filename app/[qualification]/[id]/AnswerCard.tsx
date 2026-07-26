@@ -1,10 +1,9 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v1.9
+ * バージョン: v2.0
  * 更新日: 2026-07-26
- * 内容: リスニング問題は、選択肢のテキストも解答前は非表示にし、番号ボタンのみ表示する
- *      (本番の英検リスニングは選択肢も音声のみで、印刷されていないため)。解答後は選んだ結果とともに
- *      選択肢テキストも表示する。
+ * 内容: 同じtheme範囲(sameThemeIds)の回答数・正解数・誤答数をStatsBadgeで表示する
+ *      (問題文の上、ナビゲーション行の下に配置)
  */
 
 "use client";
@@ -14,6 +13,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import type { Question } from "@/lib/supabase";
+import StatsBadge from "../StatsBadge";
 
 export default function AnswerCard({
   question,
@@ -21,12 +21,14 @@ export default function AnswerCard({
   prevHref,
   questionNumber,
   totalCount,
+  sameThemeIds,
 }: {
   question: Question;
   nextHref: string | null;
   prevHref: string | null;
   questionNumber: number;
   totalCount: number;
+  sameThemeIds: number[];
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -89,6 +91,8 @@ export default function AnswerCard({
         )}
       </div>
 
+      <StatsBadge questionIds={sameThemeIds} label="このテーマ" />
+
       {(!isListening || isAnswered) && <p>{question.question_text}</p>}
 
       {isListening && !isAnswered && (
@@ -109,7 +113,6 @@ export default function AnswerCard({
         } else if (num === selected) {
           cls += " selected";
         }
-        // リスニング問題は解答前、選択肢のテキストを隠して番号だけにする
         const label =
           isListening && !isAnswered ? `${num}` : `${num}. ${choice}`;
         return (
