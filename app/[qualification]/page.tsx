@@ -1,8 +1,9 @@
 /**
  * ファイル: app/[qualification]/page.tsx
- * バージョン: v0.6
+ * バージョン: v0.7
  * 更新日: 2026-07-26
- * 内容: テーマ絞り込みを単一選択から複数選択(カンマ区切りのURLパラメータ、チップのトグル方式)に変更
+ * 内容: リスニング問題(themeが「リスニング」で始まる)は一覧プレビューに英文を出さず、
+ *      「問◯ (リスニング)」のような表示にする
  */
 
 import Link from "next/link";
@@ -142,16 +143,22 @@ export default async function QualificationPage({
       )}
 
       {filtered.length === 0 && <p>問題がありません。</p>}
-      {filtered.map((q, i) => (
-        <Link
-          key={q.id}
-          href={`/${params.qualification}/${q.id}`}
-          className="card"
-        >
-          問{i + 1} {q.question_text.slice(0, 40)}
-          {q.question_text.length > 40 ? "…" : ""}
-        </Link>
-      ))}
+      {filtered.map((q, i) => {
+        const isListening = q.theme?.startsWith("リスニング") ?? false;
+        return (
+          <Link
+            key={q.id}
+            href={`/${params.qualification}/${q.id}`}
+            className="card"
+          >
+            {isListening
+              ? `問${i + 1} (${q.theme})`
+              : `問${i + 1} ${q.question_text.slice(0, 40)}${
+                  q.question_text.length > 40 ? "…" : ""
+                }`}
+          </Link>
+        );
+      })}
     </div>
   );
 }
