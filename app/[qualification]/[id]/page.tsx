@@ -1,8 +1,9 @@
 /**
  * ファイル: app/[qualification]/[id]/page.tsx
- * バージョン: v0.8
+ * バージョン: v0.9
  * 更新日: 2026-07-26
- * 内容: nextHrefに加えてprevHref(前の問題)も算出し、AnswerCardに渡す
+ * 内容: 前へ/次へをループさせず、最初/最後の問題では該当ボタンを出さないように変更。
+ *      現在の問題番号(questionNumber)と全体数(totalCount)も算出してAnswerCardに渡す
  */
 
 import Link from "next/link";
@@ -36,13 +37,21 @@ export default async function QuestionPage({
 
   let nextHref: string | null = null;
   let prevHref: string | null = null;
+  let questionNumber = 1;
+  let totalCount = 1;
+
   if (sameRound && sameRound.length > 0) {
     const ids = sameRound.map((q) => q.id);
     const currentIndex = ids.indexOf(question.id);
-    const nextIndex = (currentIndex + 1) % ids.length;
-    const prevIndex = (currentIndex - 1 + ids.length) % ids.length;
-    nextHref = `/${params.qualification}/${ids[nextIndex]}`;
-    prevHref = `/${params.qualification}/${ids[prevIndex]}`;
+    totalCount = ids.length;
+    questionNumber = currentIndex + 1;
+
+    if (currentIndex < ids.length - 1) {
+      nextHref = `/${params.qualification}/${ids[currentIndex + 1]}`;
+    }
+    if (currentIndex > 0) {
+      prevHref = `/${params.qualification}/${ids[currentIndex - 1]}`;
+    }
   }
 
   return (
@@ -50,7 +59,13 @@ export default async function QuestionPage({
       <p>
         <Link href={`/${params.qualification}`}>← 一覧に戻る</Link>
       </p>
-      <AnswerCard question={question} nextHref={nextHref} prevHref={prevHref} />
+      <AnswerCard
+        question={question}
+        nextHref={nextHref}
+        prevHref={prevHref}
+        questionNumber={questionNumber}
+        totalCount={totalCount}
+      />
     </div>
   );
 }
