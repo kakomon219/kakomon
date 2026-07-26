@@ -1,8 +1,8 @@
 /**
  * ファイル: lib/supabase.ts
- * バージョン: v0.8
+ * バージョン: v0.9
  * 更新日: 2026-07-26
- * 内容: Question型にaudio_url(リスニング音声URL)フィールドを追加
+ * 内容: Question型にimage_url(リスニング第1部などのイラスト画像URL)フィールドを追加
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -32,4 +32,5 @@ export type Question = {
   explanation: string | null;
   translation: string | null;
   audio_url: string | null;
+  image_url: string | null;
 };
