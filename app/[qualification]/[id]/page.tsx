@@ -1,9 +1,9 @@
 /**
  * ファイル: app/[qualification]/[id]/page.tsx
- * バージョン: v1.1
+ * バージョン: v1.2
  * 更新日: 2026-07-26
- * 内容: 「一覧に戻る」リンクが常に絞り込みなしにリセットされていたバグを修正。
- *      URLのexam_round/theme(searchParams)を読み取り、戻るリンク・次へ/前へリンクに引き継ぐ
+ * 内容: AnswerCardにsameThemeIds(同じtheme内の全question id)を渡し、
+ *      解答画面でそのテーマの回答数・正解数・誤答数を表示できるようにした
  */
 
 import Link from "next/link";
@@ -38,7 +38,6 @@ export default async function QuestionPage({
     .eq("theme", question.theme)
     .order("id", { ascending: true });
 
-  // 現在の絞り込み条件(級・回/テーマ)をquery文字列化し、戻る・次へ/前へに引き継ぐ
   const filterQs = new URLSearchParams();
   if (searchParams.exam_round) filterQs.set("exam_round", searchParams.exam_round);
   if (searchParams.theme) filterQs.set("theme", searchParams.theme);
@@ -49,6 +48,7 @@ export default async function QuestionPage({
   let prevHref: string | null = null;
   let questionNumber = 1;
   let totalCount = 1;
+  const sameThemeIds = (sameTheme ?? []).map((q) => q.id);
 
   if (sameTheme && sameTheme.length > 0) {
     const ids = sameTheme.map((q) => q.id);
@@ -75,6 +75,7 @@ export default async function QuestionPage({
         prevHref={prevHref}
         questionNumber={questionNumber}
         totalCount={totalCount}
+        sameThemeIds={sameThemeIds}
       />
     </div>
   );
