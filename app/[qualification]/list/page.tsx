@@ -1,9 +1,9 @@
 /**
  * ファイル: app/[qualification]/list/page.tsx
- * バージョン: v0.3
+ * バージョン: v0.4
  * 更新日: 2026-07-26
- * 内容: 「新しい問題/間違えた問題」一覧からも、絞り込み条件(exam_round/theme)をquery付きで
- *      各問題へのリンクに引き継ぐようにした(「一覧に戻る」リセット対応)
+ * 内容: 一覧のプレビュー表示で、themeが「リスニング」で始まる問題は question_text を隠し、
+ *      「🎧 音声問題」のような表示に差し替え(答えが見えてしまうバグの修正)
  */
 
 "use client";
@@ -13,7 +13,12 @@ import { useSearchParams, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
-type Question = { id: number; question_no: number | null; question_text: string };
+type Question = {
+  id: number;
+  question_no: number | null;
+  question_text: string;
+  theme: string | null;
+};
 
 export default function FilteredListPage() {
   const searchParams = useSearchParams();
@@ -41,7 +46,7 @@ export default function FilteredListPage() {
 
     supabase
       .from("questions")
-      .select("id, question_no, question_text")
+      .select("id, question_no, question_text, theme")
       .in("id", ids)
       .then(({ data }) => {
         const sorted = (data ?? []).sort((a, b) => {
@@ -64,6 +69,13 @@ export default function FilteredListPage() {
   const questionHref = (id: number) =>
     `/${qualification}/${id}${filterQsStr ? `?${filterQsStr}` : ""}`;
 
+  const previewLabel = (t: string | null, text: string) => {
+    if (t?.startsWith("リスニング")) {
+      return "🎧 音声問題";
+    }
+    return `${text.slice(0, 40)}${text.length > 40 ? "…" : ""}`;
+  };
+
   return (
     <div>
       <p>
@@ -75,8 +87,7 @@ export default function FilteredListPage() {
       {questions.map((q) => (
         <Link key={q.id} href={questionHref(q.id)} className="card">
           {q.question_no != null ? `No.${q.question_no}` : "No.-"}{" "}
-          {q.question_text.slice(0, 40)}
-          {q.question_text.length > 40 ? "…" : ""}
+          {previewLabel(q.theme, q.question_text)}
         </Link>
       ))}
     </div>
