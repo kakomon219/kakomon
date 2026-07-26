@@ -1,8 +1,8 @@
 /**
  * ファイル: app/globals.css
- * バージョン: v1.4
+ * バージョン: v1.5
  * 更新日: 2026-07-26
- * 内容: 問題番号表示用の.question-numberを追加
+ * 内容: リスニング第1部イラスト表示用の.question-imageを追加
  */
 
 body {
@@ -125,4 +125,12 @@ a {
   font-size: 13px;
   color: #888;
   margin: 0 0 8px 0;
+}
+
+.question-image {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto 16px;
+  border-radius: 8px;
 }
