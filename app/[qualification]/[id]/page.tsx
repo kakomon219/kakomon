@@ -1,8 +1,8 @@
 /**
  * ファイル: app/[qualification]/[id]/page.tsx
- * バージョン: v0.7
- * 更新日: 2026-07-25
- * 内容: 同じexam_round(級)内で次の問題へループするnextHrefを算出してAnswerCardに渡す
+ * バージョン: v0.8
+ * 更新日: 2026-07-26
+ * 内容: nextHrefに加えてprevHref(前の問題)も算出し、AnswerCardに渡す
  */
 
 import Link from "next/link";
@@ -35,12 +35,14 @@ export default async function QuestionPage({
     .order("id", { ascending: true });
 
   let nextHref: string | null = null;
+  let prevHref: string | null = null;
   if (sameRound && sameRound.length > 0) {
     const ids = sameRound.map((q) => q.id);
     const currentIndex = ids.indexOf(question.id);
     const nextIndex = (currentIndex + 1) % ids.length;
-    const nextId = ids[nextIndex];
-    nextHref = `/${params.qualification}/${nextId}`;
+    const prevIndex = (currentIndex - 1 + ids.length) % ids.length;
+    nextHref = `/${params.qualification}/${ids[nextIndex]}`;
+    prevHref = `/${params.qualification}/${ids[prevIndex]}`;
   }
 
   return (
@@ -48,7 +50,7 @@ export default async function QuestionPage({
       <p>
         <Link href={`/${params.qualification}`}>← 一覧に戻る</Link>
       </p>
-      <AnswerCard question={question} nextHref={nextHref} />
+      <AnswerCard question={question} nextHref={nextHref} prevHref={prevHref} />
     </div>
   );
 }
