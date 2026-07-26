@@ -1,8 +1,8 @@
 /**
  * ファイル: app/globals.css
- * バージョン: v1.3
+ * バージョン: v1.4
  * 更新日: 2026-07-26
- * 内容: .nav-rowにgapを追加し、前の問題へ/次の問題へボタンの文字がくっつく問題を修正
+ * 内容: 問題番号表示用の.question-numberを追加
  */
 
 body {
@@ -119,4 +119,10 @@ a {
   border-radius: 999px;
   background: #eee;
   font-size: 14px;
+}
+
+.question-number {
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 8px 0;
 }
