@@ -1,14 +1,15 @@
 /**
  * ファイル: app/[qualification]/page.tsx
- * バージョン: v0.11
+ * バージョン: v0.12
  * 更新日: 2026-07-26
- * 内容: 一覧のプレビュー表示で、themeが「リスニング」で始まる問題は question_text を隠し、
- *      「🎧 音声問題」のような表示に差し替え(答えが見えてしまうバグの修正)
+ * 内容: StatsBadgeを追加。資格全体の集計を常時表示し、絞り込み中(年度またはテーマ)は
+ *      その範囲の集計もあわせて表示する
  */
 
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import ModeButtons from "./ModeButtons";
+import StatsBadge from "./StatsBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -95,7 +96,6 @@ export default async function QualificationPage({
     return 0;
   });
 
-  // リスニング問題は一覧プレビューで問題文(=放送内容)を表示しない
   const previewLabel = (theme: string | null, text: string) => {
     if (theme?.startsWith("リスニング")) {
       return "🎧 音声問題";
@@ -103,12 +103,22 @@ export default async function QualificationPage({
     return `${text.slice(0, 40)}${text.length > 40 ? "…" : ""}`;
   };
 
+  const isFiltering = Boolean(selectedExamRound) || selectedThemes.length > 0;
+
   return (
     <div>
       <p>
         <Link href="/">← 資格選択に戻る</Link>
       </p>
       <h1>{qualification}</h1>
+
+      <StatsBadge questionIds={questions.map((q) => q.id)} label="資格全体" />
+      {isFiltering && (
+        <StatsBadge
+          questionIds={filtered.map((q) => q.id)}
+          label="この絞り込み範囲"
+        />
+      )}
 
       <ModeButtons
         qualification={params.qualification}
