@@ -1,8 +1,8 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v1.7
+ * バージョン: v1.8
  * 更新日: 2026-07-26
- * 内容: 「問◯/◯問中」の問題番号表示を追加(前の問題へ/次の問題へボタンの上)
+ * 内容: question.image_urlがあれば「音声を聞いて答えを選んでください」の下にイラストを表示
  */
 
 "use client";
@@ -91,6 +91,10 @@ export default function AnswerCard({
 
       {isListening && !isAnswered && (
         <p className="listening-hint">音声を聞いて答えを選んでください。</p>
+      )}
+
+      {question.image_url && (
+        <img src={question.image_url} alt="問題のイラスト" className="question-image" />
       )}
 
       {choices.map((choice, i) => {
