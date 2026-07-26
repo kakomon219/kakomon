@@ -1,8 +1,9 @@
 /**
  * ファイル: app/[qualification]/page.tsx
- * バージョン: v0.8
+ * バージョン: v0.10
  * 更新日: 2026-07-26
- * 内容: 一覧表示のラベルを「問{i+1}」(表示順)から「No.{question_no}」(本来の問題番号)に変更
+ * 内容: ModeButtonsにexamRound/themesを渡す。問題一覧の各リンクにも絞り込み条件をqueryとして付与し、
+ *      問題ページ側で「一覧に戻る」時に条件を復元できるようにした
  */
 
 import Link from "next/link";
@@ -79,6 +80,15 @@ export default async function QualificationPage({
     return `/${params.qualification}${qsStr ? `?${qsStr}` : ""}`;
   };
 
+  // 問題一覧の各リンクに、現在の絞り込み条件をqueryとして付与(一覧に戻る時の復元用)
+  const buildQuestionHref = (id: number) => {
+    const qs = new URLSearchParams();
+    if (selectedExamRound) qs.set("exam_round", selectedExamRound);
+    if (selectedThemes.length > 0) qs.set("theme", selectedThemes.join(","));
+    const qsStr = qs.toString();
+    return `/${params.qualification}/${id}${qsStr ? `?${qsStr}` : ""}`;
+  };
+
   const sortedFiltered = [...filtered].sort((a, b) => {
     if (a.question_no != null && b.question_no != null) {
       return a.question_no - b.question_no;
@@ -95,7 +105,9 @@ export default async function QualificationPage({
 
       <ModeButtons
         qualification={params.qualification}
-        questionIds={questions.map((q) => q.id)}
+        questionIds={afterExamRound.map((q) => q.id)}
+        scopeLabel={selectedExamRound ? `${selectedExamRound}の` : ""}
+        examRound={selectedExamRound}
       />
 
       <p>級・回で絞り込み</p>
@@ -141,16 +153,14 @@ export default async function QualificationPage({
           qualification={params.qualification}
           questionIds={filtered.map((q) => q.id)}
           scopeLabel="このテーマの"
+          examRound={selectedExamRound}
+          themes={selectedThemes}
         />
       )}
 
       {sortedFiltered.length === 0 && <p>問題がありません。</p>}
       {sortedFiltered.map((q) => (
-        <Link
-          key={q.id}
-          href={`/${params.qualification}/${q.id}`}
-          className="card"
-        >
+        <Link key={q.id} href={buildQuestionHref(q.id)} className="card">
           {q.question_no != null ? `No.${q.question_no}` : "No.-"}{" "}
           {q.question_text.slice(0, 40)}
           {q.question_text.length > 40 ? "…" : ""}
