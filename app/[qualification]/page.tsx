@@ -1,9 +1,9 @@
 /**
  * ファイル: app/[qualification]/page.tsx
- * バージョン: v0.10
+ * バージョン: v0.11
  * 更新日: 2026-07-26
- * 内容: ModeButtonsにexamRound/themesを渡す。問題一覧の各リンクにも絞り込み条件をqueryとして付与し、
- *      問題ページ側で「一覧に戻る」時に条件を復元できるようにした
+ * 内容: 一覧のプレビュー表示で、themeが「リスニング」で始まる問題は question_text を隠し、
+ *      「🎧 音声問題」のような表示に差し替え(答えが見えてしまうバグの修正)
  */
 
 import Link from "next/link";
@@ -80,7 +80,6 @@ export default async function QualificationPage({
     return `/${params.qualification}${qsStr ? `?${qsStr}` : ""}`;
   };
 
-  // 問題一覧の各リンクに、現在の絞り込み条件をqueryとして付与(一覧に戻る時の復元用)
   const buildQuestionHref = (id: number) => {
     const qs = new URLSearchParams();
     if (selectedExamRound) qs.set("exam_round", selectedExamRound);
@@ -95,6 +94,14 @@ export default async function QualificationPage({
     }
     return 0;
   });
+
+  // リスニング問題は一覧プレビューで問題文(=放送内容)を表示しない
+  const previewLabel = (theme: string | null, text: string) => {
+    if (theme?.startsWith("リスニング")) {
+      return "🎧 音声問題";
+    }
+    return `${text.slice(0, 40)}${text.length > 40 ? "…" : ""}`;
+  };
 
   return (
     <div>
@@ -162,8 +169,7 @@ export default async function QualificationPage({
       {sortedFiltered.map((q) => (
         <Link key={q.id} href={buildQuestionHref(q.id)} className="card">
           {q.question_no != null ? `No.${q.question_no}` : "No.-"}{" "}
-          {q.question_text.slice(0, 40)}
-          {q.question_text.length > 40 ? "…" : ""}
+          {previewLabel(q.theme, q.question_text)}
         </Link>
       ))}
     </div>
