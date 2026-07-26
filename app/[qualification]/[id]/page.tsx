@@ -1,8 +1,9 @@
 /**
  * ファイル: app/[qualification]/[id]/page.tsx
- * バージョン: v1.0
+ * バージョン: v1.1
  * 更新日: 2026-07-26
- * 内容: 前へ/次へ・問題番号の範囲をexam_round全体からtheme単位(同じthemeの中だけ)に変更
+ * 内容: 「一覧に戻る」リンクが常に絞り込みなしにリセットされていたバグを修正。
+ *      URLのexam_round/theme(searchParams)を読み取り、戻るリンク・次へ/前へリンクに引き継ぐ
  */
 
 import Link from "next/link";
@@ -14,8 +15,10 @@ export const revalidate = 0;
 
 export default async function QuestionPage({
   params,
+  searchParams,
 }: {
   params: { qualification: string; id: string };
+  searchParams: { exam_round?: string; theme?: string };
 }) {
   const { data: question, error } = await supabase
     .from("questions")
@@ -35,6 +38,13 @@ export default async function QuestionPage({
     .eq("theme", question.theme)
     .order("id", { ascending: true });
 
+  // 現在の絞り込み条件(級・回/テーマ)をquery文字列化し、戻る・次へ/前へに引き継ぐ
+  const filterQs = new URLSearchParams();
+  if (searchParams.exam_round) filterQs.set("exam_round", searchParams.exam_round);
+  if (searchParams.theme) filterQs.set("theme", searchParams.theme);
+  const filterQsStr = filterQs.toString();
+  const withFilter = (path: string) => `${path}${filterQsStr ? `?${filterQsStr}` : ""}`;
+
   let nextHref: string | null = null;
   let prevHref: string | null = null;
   let questionNumber = 1;
@@ -47,17 +57,17 @@ export default async function QuestionPage({
     questionNumber = currentIndex + 1;
 
     if (currentIndex < ids.length - 1) {
-      nextHref = `/${params.qualification}/${ids[currentIndex + 1]}`;
+      nextHref = withFilter(`/${params.qualification}/${ids[currentIndex + 1]}`);
     }
     if (currentIndex > 0) {
-      prevHref = `/${params.qualification}/${ids[currentIndex - 1]}`;
+      prevHref = withFilter(`/${params.qualification}/${ids[currentIndex - 1]}`);
     }
   }
 
   return (
     <div>
       <p>
-        <Link href={`/${params.qualification}`}>← 一覧に戻る</Link>
+        <Link href={withFilter(`/${params.qualification}`)}>← 一覧に戻る</Link>
       </p>
       <AnswerCard
         question={question}
