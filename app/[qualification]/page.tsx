@@ -1,9 +1,8 @@
 /**
  * ファイル: app/[qualification]/page.tsx
- * バージョン: v0.7
+ * バージョン: v0.8
  * 更新日: 2026-07-26
- * 内容: リスニング問題(themeが「リスニング」で始まる)は一覧プレビューに英文を出さず、
- *      「問◯ (リスニング)」のような表示にする
+ * 内容: 一覧表示のラベルを「問{i+1}」(表示順)から「No.{question_no}」(本来の問題番号)に変更
  */
 
 import Link from "next/link";
@@ -21,14 +20,13 @@ export default async function QualificationPage({
 }) {
   const qualification = decodeURIComponent(params.qualification);
   const selectedExamRound = searchParams.exam_round;
-  // テーマは "建築学,共通" のようなカンマ区切りで複数保持
   const selectedThemes = searchParams.theme
     ? searchParams.theme.split(",").filter(Boolean)
     : [];
 
   const { data, error } = await supabase
     .from("questions")
-    .select("id, question_text, exam_round, theme")
+    .select("id, question_no, question_text, exam_round, theme")
     .eq("qualification", qualification);
 
   if (error) {
@@ -53,7 +51,6 @@ export default async function QualificationPage({
       ? afterExamRound.filter((q) => q.theme && selectedThemes.includes(q.theme))
       : afterExamRound;
 
-  // 級・回タブ用(単一選択、切り替え)
   const buildExamRoundHref = (nextExamRound: string | undefined) => {
     const qs = new URLSearchParams();
     if (nextExamRound) qs.set("exam_round", nextExamRound);
@@ -62,7 +59,6 @@ export default async function QualificationPage({
     return `/${params.qualification}${qsStr ? `?${qsStr}` : ""}`;
   };
 
-  // テーマチップ用(複数選択、トグル)
   const buildThemeToggleHref = (theme: string) => {
     const isSelected = selectedThemes.includes(theme);
     const nextThemes = isSelected
@@ -76,13 +72,19 @@ export default async function QualificationPage({
     return `/${params.qualification}${qsStr ? `?${qsStr}` : ""}`;
   };
 
-  // テーマ「全て」= 選択を全解除
   const buildThemeClearHref = () => {
     const qs = new URLSearchParams();
     if (selectedExamRound) qs.set("exam_round", selectedExamRound);
     const qsStr = qs.toString();
     return `/${params.qualification}${qsStr ? `?${qsStr}` : ""}`;
   };
+
+  const sortedFiltered = [...filtered].sort((a, b) => {
+    if (a.question_no != null && b.question_no != null) {
+      return a.question_no - b.question_no;
+    }
+    return 0;
+  });
 
   return (
     <div>
@@ -142,23 +144,18 @@ export default async function QualificationPage({
         />
       )}
 
-      {filtered.length === 0 && <p>問題がありません。</p>}
-      {filtered.map((q, i) => {
-        const isListening = q.theme?.startsWith("リスニング") ?? false;
-        return (
-          <Link
-            key={q.id}
-            href={`/${params.qualification}/${q.id}`}
-            className="card"
-          >
-            {isListening
-              ? `問${i + 1} (${q.theme})`
-              : `問${i + 1} ${q.question_text.slice(0, 40)}${
-                  q.question_text.length > 40 ? "…" : ""
-                }`}
-          </Link>
-        );
-      })}
+      {sortedFiltered.length === 0 && <p>問題がありません。</p>}
+      {sortedFiltered.map((q) => (
+        <Link
+          key={q.id}
+          href={`/${params.qualification}/${q.id}`}
+          className="card"
+        >
+          {q.question_no != null ? `No.${q.question_no}` : "No.-"}{" "}
+          {q.question_text.slice(0, 40)}
+          {q.question_text.length > 40 ? "…" : ""}
+        </Link>
+      ))}
     </div>
   );
 }
