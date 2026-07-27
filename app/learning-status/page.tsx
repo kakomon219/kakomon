@@ -1,7 +1,8 @@
 /**
  * ファイル: app/learning-status/page.tsx
- * バージョン: v1.0
+ * バージョン: v1.1
  * 更新日: 2026-07-28
+ * 参考: app/[qualification]/[id]/AnswerCard.tsx (クライアント構成・スタイル・supabase呼び出し方針を踏襲)
  * 内容: localStorageのkakomon_user_idを元に、資格→級→分野別の正答率と
  *      間違えた問題一覧を表示する学習状況ページ
  */
@@ -122,7 +123,7 @@ export default function LearningStatusPage() {
         <div className="status-header-row">
           <Link href="/" className="nav-btn">← 戻る</Link>
           <span>{today}</span>
-          <span>v1.0</span>
+          <span>v1.1</span>
         </div>
         <div className="status-header-path">app/learning-status/page.tsx</div>
       </header>
