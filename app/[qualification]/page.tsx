@@ -1,9 +1,8 @@
 /**
  * ファイル: app/[qualification]/page.tsx
- * バージョン: v0.12
- * 更新日: 2026-07-26
- * 内容: StatsBadgeを追加。資格全体の集計を常時表示し、絞り込み中(年度またはテーマ)は
- *      その範囲の集計もあわせて表示する
+ * バージョン: v0.13
+ * 更新日: 2026-07-28
+ * 内容: この資格に絞り込んだ学習状況ページへのリンクを追加
  */
 
 import Link from "next/link";
@@ -119,6 +118,15 @@ export default async function QualificationPage({
           label="この絞り込み範囲"
         />
       )}
+
+      <p>
+        <Link
+          href={`/learning-status?qualification=${encodeURIComponent(qualification)}`}
+          className="nav-btn"
+        >
+          この資格の学習状況を見る
+        </Link>
+      </p>
 
       <ModeButtons
         qualification={params.qualification}
