@@ -3,7 +3,7 @@
  * バージョン: v1.1
  * 更新日: 2026-07-28
  * 参考: app/[qualification]/[id]/AnswerCard.tsx (クライアント構成・スタイル・supabase呼び出し方針を踏襲)
- * 内容: localStorageのkakomon_user_idを元に、資格→級→分野別の正答率と
+ * 内容: localStorageのkakomon_user_idを元に、資格ごとの正答率と
  *      間違えた問題一覧を表示する学習状況ページ
  */
 
@@ -121,7 +121,7 @@ export default function LearningStatusPage() {
     <div>
       <header className="status-header">
         <div className="status-header-row">
-          <Link href="/" className="nav-btn">← 戻る</Link>
+          <Link href="/" className="nav-btn">戻る</Link>
           <span>{today}</span>
           <span>v1.1</span>
         </div>
@@ -135,20 +135,20 @@ export default function LearningStatusPage() {
         {Object.entries(tree).map(([qualification, qData]) => (
           <details key={qualification} className="status-block" open>
             <summary>
-              {qualification}　正答率 {rate(qData.correct, qData.total)}%
-              　({qData.correct}/{qData.total}問)
+              {qualification} - 正答率 {rate(qData.correct, qData.total)}%
+              ({qData.correct}/{qData.total}問)
             </summary>
 
             {Object.entries(qData.rounds).map(([round, rData]) => (
               <details key={round} className="status-block-inner">
                 <summary>
-                  {round}　正答率 {rate(rData.correct, rData.total)}%
-                  　({rData.correct}/{rData.total}問)
+                  {round} - 正答率 {rate(rData.correct, rData.total)}%
+                  ({rData.correct}/{rData.total}問)
                 </summary>
                 {Object.entries(rData.themes).map(([theme, tData]) => (
                   <div key={theme} className="status-theme-line">
-                    {theme}　正答率 {rate(tData.correct, tData.total)}%
-                    　({tData.correct}/{tData.total}問)
+                    {theme} - 正答率 {rate(tData.correct, tData.total)}%
+                    ({tData.correct}/{tData.total}問)
                   </div>
                 ))}
               </details>
@@ -169,7 +169,7 @@ export default function LearningStatusPage() {
             </p>
             <p>{a.questions?.question_text}</p>
             <p className="status-wrong-meta">
-              あなたの解答:{a.selected_answer}番　正解:{a.questions?.correct_answer}番
+              あなたの解答: {a.selected_answer}番 正解: {a.questions?.correct_answer}番
             </p>
             {a.questions?.explanation && (
               <p
