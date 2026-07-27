@@ -1,8 +1,8 @@
 /**
  * ファイル: app/learning-status/page.tsx
- * バージョン: v1.5
+ * バージョン: v1.6
  * 更新日: 2026-07-28
- * 内容: useSearchParams()のビルドエラー対策としてSuspenseで内部コンポーネントを包む形に変更
+ * 内容: メール本文は正答率サマリーまでとし、間違えた問題一覧は含めないよう変更(画面表示は従来通り)
  */
 
 "use client";
@@ -127,7 +127,8 @@ function LearningStatusContent() {
 
   const rate = (c: number, t: number) => (t > 0 ? Math.round((c / t) * 100) : 0);
 
-  const buildSummaryText = () => {
+  // コピー用: 正答率サマリー + 間違えた問題一覧(従来通り)
+  const buildFullSummaryText = () => {
     const lines: string[] = [];
     lines.push(`学習状況レポート (${today})${filterQualification ? ` - ${filterQualification}` : ""}`);
     lines.push("");
@@ -156,8 +157,30 @@ function LearningStatusContent() {
     return lines.join("\n");
   };
 
+  // メール用: 正答率サマリーのみ(間違えた問題一覧は含めない)
+  const buildMailSummaryText = () => {
+    const lines: string[] = [];
+    lines.push(`学習状況レポート (${today})${filterQualification ? ` - ${filterQualification}` : ""}`);
+    lines.push("");
+
+    Object.entries(tree).forEach(([qualification, qData]) => {
+      lines.push(`■ ${qualification}  正答率 ${rate(qData.correct, qData.total)}% (${qData.correct}/${qData.total}問)`);
+      Object.entries(qData.rounds).forEach(([round, rData]) => {
+        lines.push(`  - ${round}  正答率 ${rate(rData.correct, rData.total)}% (${rData.correct}/${rData.total}問)`);
+        Object.entries(rData.themes).forEach(([theme, tData]) => {
+          lines.push(`    ・${theme}  正答率 ${rate(tData.correct, tData.total)}% (${tData.correct}/${tData.total}問)`);
+        });
+      });
+      lines.push("");
+    });
+
+    lines.push(`間違えた問題数: ${wrongList.length}問(詳細はアプリでご確認ください)`);
+
+    return lines.join("\n");
+  };
+
   const handleCopy = async () => {
-    const text = buildSummaryText();
+    const text = buildFullSummaryText();
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -168,7 +191,7 @@ function LearningStatusContent() {
   };
 
   const handleMailto = () => {
-    const text = buildSummaryText();
+    const text = buildMailSummaryText();
     const subject = encodeURIComponent(
       `学習状況レポート (${today})${filterQualification ? ` - ${filterQualification}` : ""}`
     );
@@ -186,7 +209,7 @@ function LearningStatusContent() {
             戻る
           </Link>
           <span>{today}</span>
-          <span>v1.5</span>
+          <span>v1.6</span>
         </div>
         <div className="status-header-path">app/learning-status/page.tsx</div>
       </header>
