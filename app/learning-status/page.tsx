@@ -1,15 +1,17 @@
 /**
  * ファイル: app/learning-status/page.tsx
- * バージョン: v1.3
+ * バージョン: v1.4
  * 更新日: 2026-07-28
  * 参考: app/[qualification]/[id]/AnswerCard.tsx (クライアント構成・スタイル・supabase呼び出し方針を踏襲)
- * 内容: localStorageのkakomon_user_idを元に、資格ごとの正答率と
- *      間違えた問題一覧を表示する学習状況ページ。学習結果のコピー・メール送信機能を追加。
+ * 内容: localStorageのkakomon_user_idを元に、資格ごとの正答率と間違えた問題一覧を表示する学習状況ページ。
+ *      ?qualification=xxx が付いている場合はその資格のみに絞り込んで表示する。
+ *      結果のコピー・メール送信機能あり。
  */
 
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
@@ -34,6 +36,9 @@ type RoundStat = { total: number; correct: number; themes: Record<string, ThemeS
 type QualStat = { total: number; correct: number; rounds: Record<string, RoundStat> };
 
 export default function LearningStatusPage() {
+  const searchParams = useSearchParams();
+  const filterQualification = searchParams.get("qualification"); // 例: "漢字検定" または null(全資格)
+
   const [loading, setLoading] = useState(true);
   const [tree, setTree] = useState<Record<string, QualStat>>({});
   const [wrongList, setWrongList] = useState<AttemptRow[]>([]);
@@ -57,7 +62,7 @@ export default function LearningStatusPage() {
     }
 
     (async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("attempts")
         .select(
           `
@@ -79,6 +84,8 @@ export default function LearningStatusPage() {
         .eq("user_id", Number(userId))
         .order("answered_at", { ascending: false });
 
+      const { data, error } = await query;
+
       if (error || !data) {
         setLoading(false);
         return;
@@ -90,6 +97,8 @@ export default function LearningStatusPage() {
       (data as unknown as AttemptRow[]).forEach((a) => {
         const q = a.questions;
         if (!q) return;
+        // 資格を絞り込む場合はここでフィルタ
+        if (filterQualification && q.qualification !== filterQualification) return;
 
         newTree[q.qualification] ??= { total: 0, correct: 0, rounds: {} };
         newTree[q.qualification].total++;
@@ -112,14 +121,13 @@ export default function LearningStatusPage() {
       setWrongList(newWrongList);
       setLoading(false);
     })();
-  }, []);
+  }, [filterQualification]);
 
   const rate = (c: number, t: number) => (t > 0 ? Math.round((c / t) * 100) : 0);
 
-  // 学習結果をテキスト形式に整形
   const buildSummaryText = () => {
     const lines: string[] = [];
-    lines.push(`学習状況レポート (${today})`);
+    lines.push(`学習状況レポート (${today})${filterQualification ? ` - ${filterQualification}` : ""}`);
     lines.push("");
 
     Object.entries(tree).forEach(([qualification, qData]) => {
@@ -159,7 +167,9 @@ export default function LearningStatusPage() {
 
   const handleMailto = () => {
     const text = buildSummaryText();
-    const subject = encodeURIComponent(`学習状況レポート (${today})`);
+    const subject = encodeURIComponent(
+      `学習状況レポート (${today})${filterQualification ? ` - ${filterQualification}` : ""}`
+    );
     const body = encodeURIComponent(text);
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   };
@@ -170,15 +180,20 @@ export default function LearningStatusPage() {
     <div>
       <header className="status-header">
         <div className="status-header-row">
-          <Link href="/" className="nav-btn">戻る</Link>
+          <Link href={filterQualification ? `/${filterQualification}` : "/"} className="nav-btn">
+            戻る
+          </Link>
           <span>{today}</span>
-          <span>v1.3</span>
+          <span>v1.4</span>
         </div>
         <div className="status-header-path">app/learning-status/page.tsx</div>
       </header>
 
       <div className="card">
-        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        <h1 style={{ fontSize: "1.1rem", margin: "0 0 8px 0" }}>
+          学習状況{filterQualification ? `（${filterQualification}）` : "（全資格）"}
+        </h1>
+        <div style={{ display: "flex", gap: 8 }}>
           <button className="choice-btn" onClick={handleCopy} style={{ marginBottom: 0 }}>
             {copied ? "コピーしました" : "結果をコピー"}
           </button>
