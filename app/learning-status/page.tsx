@@ -1,10 +1,10 @@
 /**
  * ファイル: app/learning-status/page.tsx
- * バージョン: v1.2
+ * バージョン: v1.3
  * 更新日: 2026-07-28
  * 参考: app/[qualification]/[id]/AnswerCard.tsx (クライアント構成・スタイル・supabase呼び出し方針を踏襲)
  * 内容: localStorageのkakomon_user_idを元に、資格ごとの正答率と
- *      間違えた問題一覧を表示する学習状況ページ
+ *      間違えた問題一覧を表示する学習状況ページ。学習結果のコピー・メール送信機能を追加。
  */
 
 "use client";
@@ -38,6 +38,7 @@ export default function LearningStatusPage() {
   const [tree, setTree] = useState<Record<string, QualStat>>({});
   const [wrongList, setWrongList] = useState<AttemptRow[]>([]);
   const [today, setToday] = useState("");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     setToday(
@@ -115,6 +116,54 @@ export default function LearningStatusPage() {
 
   const rate = (c: number, t: number) => (t > 0 ? Math.round((c / t) * 100) : 0);
 
+  // 学習結果をテキスト形式に整形
+  const buildSummaryText = () => {
+    const lines: string[] = [];
+    lines.push(`学習状況レポート (${today})`);
+    lines.push("");
+
+    Object.entries(tree).forEach(([qualification, qData]) => {
+      lines.push(`■ ${qualification}  正答率 ${rate(qData.correct, qData.total)}% (${qData.correct}/${qData.total}問)`);
+      Object.entries(qData.rounds).forEach(([round, rData]) => {
+        lines.push(`  - ${round}  正答率 ${rate(rData.correct, rData.total)}% (${rData.correct}/${rData.total}問)`);
+        Object.entries(rData.themes).forEach(([theme, tData]) => {
+          lines.push(`    ・${theme}  正答率 ${rate(tData.correct, tData.total)}% (${tData.correct}/${tData.total}問)`);
+        });
+      });
+      lines.push("");
+    });
+
+    if (wrongList.length > 0) {
+      lines.push(`■ 間違えた問題 (${wrongList.length}問)`);
+      wrongList.forEach((a, i) => {
+        lines.push(`${i + 1}. [${a.questions?.qualification} / ${a.questions?.exam_round} / ${a.questions?.theme}]`);
+        lines.push(`   ${a.questions?.question_text}`);
+        lines.push(`   あなたの解答: ${a.selected_answer}番  正解: ${a.questions?.correct_answer}番`);
+        lines.push("");
+      });
+    }
+
+    return lines.join("\n");
+  };
+
+  const handleCopy = async () => {
+    const text = buildSummaryText();
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      alert("コピーに失敗しました。");
+    }
+  };
+
+  const handleMailto = () => {
+    const text = buildSummaryText();
+    const subject = encodeURIComponent(`学習状況レポート (${today})`);
+    const body = encodeURIComponent(text);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+
   if (loading) return <div className="card">読み込み中...</div>;
 
   return (
@@ -123,10 +172,21 @@ export default function LearningStatusPage() {
         <div className="status-header-row">
           <Link href="/" className="nav-btn">戻る</Link>
           <span>{today}</span>
-          <span>v1.2</span>
+          <span>v1.3</span>
         </div>
         <div className="status-header-path">app/learning-status/page.tsx</div>
       </header>
+
+      <div className="card">
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <button className="choice-btn" onClick={handleCopy} style={{ marginBottom: 0 }}>
+            {copied ? "コピーしました" : "結果をコピー"}
+          </button>
+          <button className="choice-btn" onClick={handleMailto} style={{ marginBottom: 0 }}>
+            メールで送る
+          </button>
+        </div>
+      </div>
 
       <div className="card">
         <h2>分野別 正答率</h2>
