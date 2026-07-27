@@ -1,16 +1,13 @@
 /**
  * ファイル: app/learning-status/page.tsx
- * バージョン: v1.4
+ * バージョン: v1.5
  * 更新日: 2026-07-28
- * 参考: app/[qualification]/[id]/AnswerCard.tsx (クライアント構成・スタイル・supabase呼び出し方針を踏襲)
- * 内容: localStorageのkakomon_user_idを元に、資格ごとの正答率と間違えた問題一覧を表示する学習状況ページ。
- *      ?qualification=xxx が付いている場合はその資格のみに絞り込んで表示する。
- *      結果のコピー・メール送信機能あり。
+ * 内容: useSearchParams()のビルドエラー対策としてSuspenseで内部コンポーネントを包む形に変更
  */
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -36,8 +33,16 @@ type RoundStat = { total: number; correct: number; themes: Record<string, ThemeS
 type QualStat = { total: number; correct: number; rounds: Record<string, RoundStat> };
 
 export default function LearningStatusPage() {
+  return (
+    <Suspense fallback={<div className="card">読み込み中...</div>}>
+      <LearningStatusContent />
+    </Suspense>
+  );
+}
+
+function LearningStatusContent() {
   const searchParams = useSearchParams();
-  const filterQualification = searchParams.get("qualification"); // 例: "漢字検定" または null(全資格)
+  const filterQualification = searchParams.get("qualification");
 
   const [loading, setLoading] = useState(true);
   const [tree, setTree] = useState<Record<string, QualStat>>({});
@@ -62,7 +67,7 @@ export default function LearningStatusPage() {
     }
 
     (async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from("attempts")
         .select(
           `
@@ -84,8 +89,6 @@ export default function LearningStatusPage() {
         .eq("user_id", Number(userId))
         .order("answered_at", { ascending: false });
 
-      const { data, error } = await query;
-
       if (error || !data) {
         setLoading(false);
         return;
@@ -97,7 +100,6 @@ export default function LearningStatusPage() {
       (data as unknown as AttemptRow[]).forEach((a) => {
         const q = a.questions;
         if (!q) return;
-        // 資格を絞り込む場合はここでフィルタ
         if (filterQualification && q.qualification !== filterQualification) return;
 
         newTree[q.qualification] ??= { total: 0, correct: 0, rounds: {} };
@@ -184,7 +186,7 @@ export default function LearningStatusPage() {
             戻る
           </Link>
           <span>{today}</span>
-          <span>v1.4</span>
+          <span>v1.5</span>
         </div>
         <div className="status-header-path">app/learning-status/page.tsx</div>
       </header>
