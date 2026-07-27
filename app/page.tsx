@@ -1,8 +1,8 @@
 /**
  * ファイル: app/page.tsx
- * バージョン: v0.4
- * 更新日: 2026-07-26
- * 内容: 画像アップロード画面へのリンクをフッターに追加
+ * バージョン: v0.5
+ * 更新日: 2026-07-28
+ * 内容: 学習状況ページ(全資格分)へのリンクを追加
  */
 
 import Link from "next/link";
@@ -30,6 +30,13 @@ export default async function HomePage() {
         <Link href="/select-user">ユーザーを切り替える</Link>
       </p>
       <h1>資格を選択</h1>
+
+      <p>
+        <Link href="/learning-status" className="nav-btn">
+          学習状況を見る
+        </Link>
+      </p>
+
       {qualifications.length === 0 && <p>まだ問題が登録されていません。</p>}
       {qualifications.map((q) => (
         <Link key={q} href={`/${encodeURIComponent(q)}`} className="card">
