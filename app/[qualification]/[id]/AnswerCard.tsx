@@ -1,10 +1,10 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v2.2
+ * バージョン: v2.3
  * 更新日: 2026-07-28
- * 内容: 選択肢を表示のたびにランダムで並べ替える(毎回並びが変わる)。
- *      正解位置とexplanation内の丸数字も表示順に合わせて動的に対応。
- *      attemptsには元の選択肢番号を記録するためDB互換性は維持。
+ * 内容: correct_answerがnull許容型のためのビルドエラー修正(correctNumに正規化)。
+ *      選択肢は表示のたびにランダムで並べ替え、正解位置とexplanation内の丸数字も
+ *      表示順に合わせて動的に対応。attemptsには元の選択肢番号を記録する。
  */
 
 "use client";
@@ -46,7 +46,11 @@ export default function AnswerCard({
   const [selected, setSelected] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
+  const [displayOrder, setDisplayOrder] = useState<number[]>([]);
   const { play } = useAudioPlayer();
+
+  /** correct_answerをnull安全な数値に正規化 */
+  const correctNum: number = question.correct_answer ?? 0;
 
   const rawChoices = [
     question.choice_1,
@@ -57,18 +61,32 @@ export default function AnswerCard({
     question.choice_6,
   ];
 
-  /** 表示順は問題が変わるたびに引き直す(=解くたびにランダム) */
-  const [displayOrder, setDisplayOrder] = useState<number[]>([]);
-
+  /** 問題が切り替わるたびに並びを引き直す(=解くたびにランダム) */
   useEffect(() => {
-    const validNums = rawChoices
+    const validNums = [
+      question.choice_1,
+      question.choice_2,
+      question.choice_3,
+      question.choice_4,
+      question.choice_5,
+      question.choice_6,
+    ]
       .map((c, i) => (c ? i + 1 : null))
       .filter((n): n is number => n !== null);
+
     setDisplayOrder(shuffle(validNums));
     setSelected(null);
     setShowExplanation(false);
     setShowTranslation(false);
-  }, [question.id]);
+  }, [
+    question.id,
+    question.choice_1,
+    question.choice_2,
+    question.choice_3,
+    question.choice_4,
+    question.choice_5,
+    question.choice_6,
+  ]);
 
   useEffect(() => {
     if (question.audio_url) play(question.audio_url);
@@ -81,11 +99,13 @@ export default function AnswerCard({
     return map;
   }, [displayOrder]);
 
-  const displayCorrect = origToDisplay.get(question.correct_answer) ?? 1;
+  const displayCorrect = origToDisplay.get(correctNum) ?? 1;
 
   /** explanation内の丸数字を今回の表示順に付け替える */
   const remappedExplanation = useMemo(() => {
-    if (!question.explanation || displayOrder.length === 0) return question.explanation;
+    if (!question.explanation || displayOrder.length === 0) {
+      return question.explanation;
+    }
     return question.explanation.replace(/[①②③④⑤⑥]/g, (mark) => {
       const origNum = CIRCLED.indexOf(mark) + 1;
       const newNum = origToDisplay.get(origNum);
@@ -94,18 +114,20 @@ export default function AnswerCard({
   }, [question.explanation, origToDisplay, displayOrder.length]);
 
   const isAnswered = selected !== null;
-  const isCorrect = selected === question.correct_answer;
+  const isCorrect = selected === correctNum;
   const isListening = question.theme?.startsWith("リスニング") ?? false;
 
   const handleSelect = async (origNum: number) => {
     setSelected(origNum);
+
     const userId = localStorage.getItem("kakomon_user_id");
     if (!userId) return;
+
     await supabase.from("attempts").insert({
       user_id: Number(userId),
       question_id: question.id,
       selected_answer: origNum,
-      is_correct: origNum === question.correct_answer,
+      is_correct: origNum === correctNum,
       answered_at: new Date().toISOString(),
     });
   };
@@ -118,12 +140,16 @@ export default function AnswerCard({
 
       <div className="nav-row">
         {prevHref ? (
-          <Link href={prevHref} className="nav-btn">← 前の問題へ</Link>
+          <Link href={prevHref} className="nav-btn">
+            ← 前の問題へ
+          </Link>
         ) : (
           <span />
         )}
         {nextHref && (
-          <Link href={nextHref} className="nav-btn">次の問題へ →</Link>
+          <Link href={nextHref} className="nav-btn">
+            次の問題へ →
+          </Link>
         )}
       </div>
 
@@ -136,7 +162,11 @@ export default function AnswerCard({
       )}
 
       {question.image_url && (
-        <img src={question.image_url} alt="問題のイラスト" className="question-image" />
+        <img
+          src={question.image_url}
+          alt="問題のイラスト"
+          className="question-image"
+        />
       )}
 
       {displayOrder.map((origNum, idx) => {
@@ -144,7 +174,7 @@ export default function AnswerCard({
         const choice = rawChoices[origNum - 1];
         let cls = "choice-btn";
         if (isAnswered) {
-          if (origNum === question.correct_answer) cls += " correct";
+          if (origNum === correctNum) cls += " correct";
           else if (origNum === selected) cls += " wrong";
         } else if (origNum === selected) {
           cls += " selected";
@@ -165,10 +195,15 @@ export default function AnswerCard({
 
       {isAnswered && (
         <div className="result">
-          <p>{isCorrect ? "✓ 正解！" : `✗ 不正解（正解は ${displayCorrect} 番）`}</p>
+          <p>
+            {isCorrect ? "✓ 正解！" : `✗ 不正解（正解は ${displayCorrect} 番）`}
+          </p>
 
           {remappedExplanation && !showExplanation && (
-            <button className="choice-btn" onClick={() => setShowExplanation(true)}>
+            <button
+              className="choice-btn"
+              onClick={() => setShowExplanation(true)}
+            >
               解説を見る
             </button>
           )}
@@ -195,7 +230,9 @@ export default function AnswerCard({
           )}
 
           {nextHref && (
-            <Link href={nextHref} className="choice-btn">次の問題へ →</Link>
+            <Link href={nextHref} className="choice-btn">
+              次の問題へ →
+            </Link>
           )}
         </div>
       )}
