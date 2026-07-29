@@ -1,8 +1,8 @@
 /**
  * ファイル: app/globals.css
- * バージョン: v1.6
- * 更新日: 2026-07-28
- * 内容: 学習状況ページ(app/learning-status/page.tsx)用のスタイルを追加
+ * バージョン: v1.7
+ * 更新日: 2026-07-30
+ * 内容: 確認パネル(app/[qualification]/ModeButtons.tsx)用のスタイルを追加
  */
 
 body {
@@ -206,5 +206,29 @@ a {
 .status-wrong-meta {
   font-size: 0.75rem;
   color: #888;
+  margin: 4px 0;
+}
+
+/* ============================================
+   確認パネル用スタイル (app/[qualification]/ModeButtons.tsx)
+   ============================================ */
+
+.mode-confirm {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.mode-confirm-title {
+  font-size: 14px;
+  font-weight: bold;
+  margin: 0 0 6px 0;
+}
+
+.mode-confirm-line {
+  font-size: 13px;
+  color: #555;
   margin: 4px 0;
 }
