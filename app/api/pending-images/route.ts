@@ -1,12 +1,16 @@
 /**
  * app/api/pending-images/route.ts - 画像アップロードが必要な問題一覧を返すAPI
- * v0.2.0  2026-07-26  needs_imageフラグでの絞り込みに変更
+ * v0.3.0  2026-08-03  dynamic/revalidate指定を追加し、ビルド時キャッシュによる
+ *                     「常に空リストが返る」不具合を解消
  *
  * ディレクトリ: app/api/pending-images/route.ts(既存・上書き)
  */
 
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
