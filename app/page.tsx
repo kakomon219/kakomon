@@ -1,9 +1,8 @@
 /**
- * app/page.tsx - 資格選択画面
- * v0.5  2026-08-08  現在のユーザー名を画面上部に表示する機能を追加
- *                   (localStorageに保存されたkakomon_user_nameを表示)
- *
- * ディレクトリ: app/page.tsx(既存・上書き)
+ * ファイル: app/page.tsx
+ * バージョン: v0.6
+ * 更新日: 2026-08-08
+ * 内容: 現在のユーザー名を画面上部に表示する機能を追加(CurrentUserコンポーネント)
  */
 
 import Link from "next/link";
@@ -33,7 +32,7 @@ export default async function HomePage() {
       <h1>資格を選択</h1>
 
       <p>
-        <Link href="/stats" className="tab">
+        <Link href="/learning-status" className="nav-btn">
           学習状況を見る
         </Link>
       </p>
@@ -44,9 +43,8 @@ export default async function HomePage() {
           {q}
         </Link>
       ))}
-
-      <p style={{ marginTop: 32 }}>
-        <Link href="/admin/upload" style={{ fontSize: 13, color: "#999" }}>
+      <p style={{ marginTop: 32, fontSize: 12, color: "#999" }}>
+        <Link href="/admin/upload" style={{ color: "#999" }}>
           画像アップロード
         </Link>
       </p>
