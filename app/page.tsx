@@ -1,12 +1,14 @@
 /**
- * ファイル: app/page.tsx
- * バージョン: v0.5
- * 更新日: 2026-07-28
- * 内容: 学習状況ページ(全資格分)へのリンクを追加
+ * app/page.tsx - 資格選択画面
+ * v0.5  2026-08-08  現在のユーザー名を画面上部に表示する機能を追加
+ *                   (localStorageに保存されたkakomon_user_nameを表示)
+ *
+ * ディレクトリ: app/page.tsx(既存・上書き)
  */
 
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import CurrentUser from "./CurrentUser";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -26,13 +28,12 @@ export default async function HomePage() {
 
   return (
     <div>
-      <p>
-        <Link href="/select-user">ユーザーを切り替える</Link>
-      </p>
+      <CurrentUser />
+
       <h1>資格を選択</h1>
 
       <p>
-        <Link href="/learning-status" className="nav-btn">
+        <Link href="/stats" className="tab">
           学習状況を見る
         </Link>
       </p>
@@ -43,8 +44,9 @@ export default async function HomePage() {
           {q}
         </Link>
       ))}
-      <p style={{ marginTop: 32, fontSize: 12, color: "#999" }}>
-        <Link href="/admin/upload" style={{ color: "#999" }}>
+
+      <p style={{ marginTop: 32 }}>
+        <Link href="/admin/upload" style={{ fontSize: 13, color: "#999" }}>
           画像アップロード
         </Link>
       </p>
