@@ -1,8 +1,9 @@
 /**
  * ファイル: app/globals.css
- * バージョン: v1.7
- * 更新日: 2026-07-30
- * 内容: 確認パネル(app/[qualification]/ModeButtons.tsx)用のスタイルを追加
+ * バージョン: v1.8
+ * 更新日: 2026-08-09
+ * 内容: 記述式(essay)問題向けに .question-text(改行反映)と
+ *      .question-image-wide(工程表など横長図表の幅いっぱい表示)を追加
  */
 
 body {
@@ -127,12 +128,23 @@ a {
   margin: 0 0 8px 0;
 }
 
+.question-text {
+  white-space: pre-wrap;
+  line-height: 1.7;
+  font-size: 15px;
+  margin: 0 0 16px 0;
+}
+
 .question-image {
   display: block;
   width: 100%;
   max-width: 300px;
   margin: 0 auto 16px;
   border-radius: 8px;
+}
+
+.question-image-wide {
+  max-width: 100%;
 }
 
 /* ============================================
