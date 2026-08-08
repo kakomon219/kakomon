@@ -1,8 +1,8 @@
 /**
  * ファイル: app/page.tsx
- * バージョン: v0.6
- * 更新日: 2026-08-08
- * 内容: 現在のユーザー名を画面上部に表示する機能を追加(CurrentUserコンポーネント)
+ * バージョン: v0.7
+ * 更新日: 2026-08-09
+ * 内容: 「学習状況を見る」の上に「受験日程を見る」ボタンを追加
  */
 
 import Link from "next/link";
@@ -30,6 +30,12 @@ export default async function HomePage() {
       <CurrentUser />
 
       <h1>資格を選択</h1>
+
+      <p>
+        <Link href="/schedule" className="nav-btn">
+          受験日程を見る
+        </Link>
+      </p>
 
       <p>
         <Link href="/learning-status" className="nav-btn">
