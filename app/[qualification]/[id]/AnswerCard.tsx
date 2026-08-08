@@ -1,10 +1,9 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v2.4
+ * バージョン: v2.5
  * 更新日: 2026-08-09
- * 内容: question_type='essay'(記述式)に対応。essayのときは選択肢を描画せず、
- *      「模範解答を見る」ボタンでmodel_answerをrubyタグ対応表示する。
- *      choice(五肢択一)の既存挙動は変更なし。
+ * 内容: 記述式(essay)の画像に .question-image-wide を併用し、
+ *      工程表など横長図表を幅いっぱいで表示するよう変更。
  */
 
 "use client";
@@ -172,7 +171,9 @@ export default function AnswerCard({
         <img
           src={question.image_url}
           alt="問題の図表"
-          className="question-image"
+          className={
+            isEssay ? "question-image question-image-wide" : "question-image"
+          }
         />
       )}
 
