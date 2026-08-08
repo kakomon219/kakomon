@@ -1,10 +1,10 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v2.3
- * 更新日: 2026-07-28
- * 内容: correct_answerがnull許容型のためのビルドエラー修正(correctNumに正規化)。
- *      選択肢は表示のたびにランダムで並べ替え、正解位置とexplanation内の丸数字も
- *      表示順に合わせて動的に対応。attemptsには元の選択肢番号を記録する。
+ * バージョン: v2.4
+ * 更新日: 2026-08-09
+ * 内容: question_type='essay'(記述式)に対応。essayのときは選択肢を描画せず、
+ *      「模範解答を見る」ボタンでmodel_answerをrubyタグ対応表示する。
+ *      choice(五肢択一)の既存挙動は変更なし。
  */
 
 "use client";
@@ -46,8 +46,12 @@ export default function AnswerCard({
   const [selected, setSelected] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
+  const [showModelAnswer, setShowModelAnswer] = useState(false);
   const [displayOrder, setDisplayOrder] = useState<number[]>([]);
   const { play } = useAudioPlayer();
+
+  /** 記述式かどうか */
+  const isEssay = question.question_type === "essay";
 
   /** correct_answerをnull安全な数値に正規化 */
   const correctNum: number = question.correct_answer ?? 0;
@@ -78,6 +82,7 @@ export default function AnswerCard({
     setSelected(null);
     setShowExplanation(false);
     setShowTranslation(false);
+    setShowModelAnswer(false);
   }, [
     question.id,
     question.choice_1,
@@ -155,86 +160,125 @@ export default function AnswerCard({
 
       <StatsBadge questionIds={sameThemeIds} label="このテーマ" />
 
-      {(!isListening || isAnswered) && <p>{question.question_text}</p>}
+      {(isEssay || !isListening || isAnswered) && (
+        <p className="question-text">{question.question_text}</p>
+      )}
 
-      {isListening && !isAnswered && (
+      {!isEssay && isListening && !isAnswered && (
         <p className="listening-hint">音声を聞いて答えを選んでください。</p>
       )}
 
       {question.image_url && (
         <img
           src={question.image_url}
-          alt="問題のイラスト"
+          alt="問題の図表"
           className="question-image"
         />
       )}
 
-      {displayOrder.map((origNum, idx) => {
-        const displayNum = idx + 1;
-        const choice = rawChoices[origNum - 1];
-        let cls = "choice-btn";
-        if (isAnswered) {
-          if (origNum === correctNum) cls += " correct";
-          else if (origNum === selected) cls += " wrong";
-        } else if (origNum === selected) {
-          cls += " selected";
-        }
-        const label =
-          isListening && !isAnswered ? `${displayNum}` : `${displayNum}. ${choice}`;
-        return (
-          <button
-            key={origNum}
-            className={cls}
-            disabled={isAnswered}
-            onClick={() => handleSelect(origNum)}
-          >
-            {label}
-          </button>
-        );
-      })}
-
-      {isAnswered && (
+      {isEssay ? (
         <div className="result">
-          <p>
-            {isCorrect ? "✓ 正解！" : `✗ 不正解（正解は ${displayCorrect} 番）`}
-          </p>
-
-          {remappedExplanation && !showExplanation && (
+          {!showModelAnswer && (
             <button
               className="choice-btn"
-              onClick={() => setShowExplanation(true)}
+              onClick={() => setShowModelAnswer(true)}
             >
-              解説を見る
+              模範解答を見る
             </button>
           )}
 
-          {remappedExplanation && showExplanation && (
-            <p dangerouslySetInnerHTML={{ __html: remappedExplanation }} />
+          {showModelAnswer && question.model_answer && (
+            <p dangerouslySetInnerHTML={{ __html: question.model_answer }} />
           )}
 
-          {!question.explanation && (
-            <p>この問題の解説はまだ登録されていません。</p>
+          {showModelAnswer && !question.model_answer && (
+            <p>この問題の模範解答はまだ登録されていません。</p>
           )}
 
-          {question.translation && (
-            <button
-              className="choice-btn"
-              onClick={() => setShowTranslation((prev) => !prev)}
-            >
-              {showTranslation ? "日本語訳を閉じる" : "日本語訳を見る"}
-            </button>
+          {showModelAnswer && question.explanation && (
+            <p dangerouslySetInnerHTML={{ __html: question.explanation }} />
           )}
 
-          {showTranslation && question.translation && (
-            <p className="translation-box">{question.translation}</p>
-          )}
-
-          {nextHref && (
+          {showModelAnswer && nextHref && (
             <Link href={nextHref} className="choice-btn">
               次の問題へ →
             </Link>
           )}
         </div>
+      ) : (
+        <>
+          {displayOrder.map((origNum, idx) => {
+            const displayNum = idx + 1;
+            const choice = rawChoices[origNum - 1];
+            let cls = "choice-btn";
+            if (isAnswered) {
+              if (origNum === correctNum) cls += " correct";
+              else if (origNum === selected) cls += " wrong";
+            } else if (origNum === selected) {
+              cls += " selected";
+            }
+            const label =
+              isListening && !isAnswered
+                ? `${displayNum}`
+                : `${displayNum}. ${choice}`;
+            return (
+              <button
+                key={origNum}
+                className={cls}
+                disabled={isAnswered}
+                onClick={() => handleSelect(origNum)}
+              >
+                {label}
+              </button>
+            );
+          })}
+
+          {isAnswered && (
+            <div className="result">
+              <p>
+                {isCorrect
+                  ? "✓ 正解！"
+                  : `✗ 不正解（正解は ${displayCorrect} 番）`}
+              </p>
+
+              {remappedExplanation && !showExplanation && (
+                <button
+                  className="choice-btn"
+                  onClick={() => setShowExplanation(true)}
+                >
+                  解説を見る
+                </button>
+              )}
+
+              {remappedExplanation && showExplanation && (
+                <p dangerouslySetInnerHTML={{ __html: remappedExplanation }} />
+              )}
+
+              {!question.explanation && (
+                <p>この問題の解説はまだ登録されていません。</p>
+              )}
+
+              {question.translation && (
+                <button
+                  className="choice-btn"
+                  onClick={() => setShowTranslation((prev) => !prev)}
+                >
+                  {showTranslation ? "日本語訳を閉じる" : "日本語訳を見る"}
+                </button>
+              )}
+
+              {showTranslation && question.translation && (
+                <p className="translation-box">{question.translation}</p>
+              )}
+
+              {nextHref && (
+                <Link href={nextHref} className="choice-btn">
+                  次の問題へ →
+                </Link>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
