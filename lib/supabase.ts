@@ -1,8 +1,9 @@
 /**
  * ファイル: lib/supabase.ts
- * バージョン: v0.9
- * 更新日: 2026-07-26
- * 内容: Question型にimage_url(リスニング第1部などのイラスト画像URL)フィールドを追加
+ * バージョン: v1.0
+ * 更新日: 2026-08-09
+ * 内容: Question型にquestion_type('choice'|'essay')とmodel_answer(記述式の模範解答)を追加。
+ *      記述式問題(第二次検定など)に対応。
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -22,6 +23,7 @@ export type Question = {
   exam_round: string | null;
   theme: string | null;
   question_text: string;
+  question_type: string | null;
   choice_1: string | null;
   choice_2: string | null;
   choice_3: string | null;
@@ -29,6 +31,7 @@ export type Question = {
   choice_5: string | null;
   choice_6: string | null;
   correct_answer: number | null;
+  model_answer: string | null;
   explanation: string | null;
   translation: string | null;
   audio_url: string | null;
