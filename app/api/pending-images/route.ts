@@ -1,9 +1,9 @@
 /**
- * app/api/pending-images/route.ts - 画像アップロードが必要な問題一覧を返すAPI
- * v0.3.0  2026-08-03  dynamic/revalidate指定を追加し、ビルド時キャッシュによる
- *                     「常に空リストが返る」不具合を解消
- *
- * ディレクトリ: app/api/pending-images/route.ts(既存・上書き)
+ * ファイル: app/api/pending-images/route.ts
+ * バージョン: v0.3.0
+ * 更新日: 2026-08-08
+ * 内容: dynamic/revalidate指定を追加し、ビルド時キャッシュにより常に空リストが
+ *       返る不具合を解消
  */
 
 import { NextResponse } from "next/server"
