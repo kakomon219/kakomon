@@ -1,8 +1,9 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v2.6
+ * バージョン: v2.7
  * 更新日: 2026-08-10
- * 内容: ナビ行に「中止する」ボタンを追加。押すとモード選択画面(一覧)に戻る。
+ * 内容: 選択肢シャッフル時、「該当なし」の選択肢はシャッフル対象から除外して
+ *      常に最後尾に固定するよう変更(問題文「該当するものがない場合は6を選びなさい」との矛盾を解消)。
  */
 
 "use client";
@@ -24,6 +25,12 @@ function shuffle<T>(arr: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+/** 「該当なし」系の選択肢かどうか(シャッフルせず最後尾に固定する) */
+function isNoneOption(choice: string | null | undefined): boolean {
+  if (!choice) return false;
+  return /^該当(するものは)?なし/.test(choice.trim());
 }
 
 export default function AnswerCard({
@@ -67,18 +74,24 @@ export default function AnswerCard({
 
   /** 問題が切り替わるたびに並びを引き直す(=解くたびにランダム) */
   useEffect(() => {
-    const validNums = [
+    const choices = [
       question.choice_1,
       question.choice_2,
       question.choice_3,
       question.choice_4,
       question.choice_5,
       question.choice_6,
-    ]
+    ];
+
+    const validNums = choices
       .map((c, i) => (c ? i + 1 : null))
       .filter((n): n is number => n !== null);
 
-    setDisplayOrder(shuffle(validNums));
+    // 「該当なし」はシャッフルせず最後尾に固定
+    const fixedNums = validNums.filter((n) => isNoneOption(choices[n - 1]));
+    const shuffleNums = validNums.filter((n) => !isNoneOption(choices[n - 1]));
+
+    setDisplayOrder([...shuffle(shuffleNums), ...fixedNums]);
     setSelected(null);
     setShowExplanation(false);
     setShowTranslation(false);
