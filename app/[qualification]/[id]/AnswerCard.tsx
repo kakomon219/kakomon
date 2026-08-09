@@ -1,9 +1,8 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v2.5
- * 更新日: 2026-08-09
- * 内容: 記述式(essay)の画像に .question-image-wide を併用し、
- *      工程表など横長図表を幅いっぱいで表示するよう変更。
+ * バージョン: v2.6
+ * 更新日: 2026-08-10
+ * 内容: ナビ行に「中止する」ボタンを追加。押すとモード選択画面(一覧)に戻る。
  */
 
 "use client";
@@ -34,6 +33,7 @@ export default function AnswerCard({
   questionNumber,
   totalCount,
   sameThemeIds,
+  qualification,
 }: {
   question: Question;
   nextHref: string | null;
@@ -41,6 +41,7 @@ export default function AnswerCard({
   questionNumber: number;
   totalCount: number;
   sameThemeIds: number[];
+  qualification: string;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -150,6 +151,9 @@ export default function AnswerCard({
         ) : (
           <span />
         )}
+        <Link href={`/${qualification}`} className="nav-btn nav-btn-stop">
+          中止する
+        </Link>
         {nextHref && (
           <Link href={nextHref} className="nav-btn">
             次の問題へ →
