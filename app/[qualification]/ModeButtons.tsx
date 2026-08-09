@@ -1,10 +1,9 @@
 /**
  * ファイル: app/[qualification]/ModeButtons.tsx
- * バージョン: v0.7
+ * バージョン: v0.8
  * 更新日: 2026-08-10
- * 内容: 「続きの問題」「間違えた問題」は級・テーマ選択をスキップし、資格全体から
- *      直接対象を集めて確認パネルへ進むように変更。確認パネルには次に解く問題が
- *      属する級・テーマを表示する。「新しい問題」は従来通り級→テーマの選択フロー。
+ * 内容: 「続きの問題」で、前回中止した位置(localStorageのkakomon_resume_*)があれば
+ *      そこから再開できるように変更。確認パネルに「最初から始める」も併設。
  */
 
 "use client";
@@ -29,6 +28,14 @@ type Props = {
 type Mode = "new" | "continue" | "wrong" | "browse";
 type Step = "menu" | "examRound" | "theme" | "confirm";
 
+type Resume = {
+  questionId: number;
+  ids: string | null;
+  examRound: string | null;
+  theme: string | null;
+  savedAt: string;
+};
+
 const MODE_LABEL: Record<Mode, string> = {
   new: "新しい問題",
   continue: "続きの問題",
@@ -47,10 +54,25 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
   const [confirmIds, setConfirmIds] = useState<number[]>([]);
   const [answeredCount, setAnsweredCount] = useState(0);
   const [firstQuestion, setFirstQuestion] = useState<QuestionMeta | undefined>(undefined);
+  const [isResume, setIsResume] = useState(false);
 
   const getUserId = () => {
     const id = localStorage.getItem("kakomon_user_id");
     return id ? Number(id) : null;
+  };
+
+  const getResume = (): Resume | null => {
+    const raw = localStorage.getItem(`kakomon_resume_${qualification}`);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as Resume;
+    } catch {
+      return null;
+    }
+  };
+
+  const clearResume = () => {
+    localStorage.removeItem(`kakomon_resume_${qualification}`);
   };
 
   const examRounds = Array.from(
@@ -125,13 +147,45 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
     setConfirmIds(targetIds);
     setAnsweredCount(answered);
     setFirstQuestion(first);
+    setIsResume(false);
     setLoading(false);
     setStep("confirm");
   };
 
+  /** 前回中止した位置から再開する確認パネルを組み立てる */
+  const buildResumeConfirm = (resume: Resume) => {
+    const ids = resume.ids
+      ? resume.ids
+          .split(",")
+          .map((s) => Number(s))
+          .filter((n) => !Number.isNaN(n))
+      : [];
+
+    const startIndex = ids.indexOf(resume.questionId);
+    const remainingIds = startIndex >= 0 ? ids.slice(startIndex) : ids;
+    const first = allQuestions.find((q) => q.id === remainingIds[0]);
+
+    if (!first) return false;
+
+    setMode("continue");
+    setSelectedExamRound(resume.examRound ?? undefined);
+    setSelectedTheme(resume.theme ?? undefined);
+    setConfirmIds(remainingIds);
+    setAnsweredCount(0);
+    setFirstQuestion(first);
+    setIsResume(true);
+    setStep("confirm");
+    return true;
+  };
+
   const startMode = (m: Mode) => {
-    // 続きの問題・間違えた問題は選択不要。資格全体から直接対象を集める
-    if (m === "continue" || m === "wrong") {
+    if (m === "continue") {
+      const resume = getResume();
+      if (resume && buildResumeConfirm(resume)) return;
+      buildConfirm(m, allQuestions, undefined, undefined);
+      return;
+    }
+    if (m === "wrong") {
       buildConfirm(m, allQuestions, undefined, undefined);
       return;
     }
@@ -167,7 +221,14 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
       router.push(`/${qualification}/list?${qs.toString()}`);
       return;
     }
+    clearResume();
     router.push(`/${qualification}/${confirmIds[0]}?${qs.toString()}`);
+  };
+
+  /** 再開記録を捨てて未回答の最小idから始め直す */
+  const startFromBeginning = () => {
+    clearResume();
+    buildConfirm("continue", allQuestions, undefined, undefined);
   };
 
   const resetToMenu = () => {
@@ -177,6 +238,7 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
     setSelectedTheme(undefined);
     setConfirmIds([]);
     setFirstQuestion(undefined);
+    setIsResume(false);
   };
 
   /** 確認パネルに出す「今どこを解くか」の表示 */
@@ -266,13 +328,16 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
       {step === "confirm" && mode && (
         <div className="mode-confirm">
           <p className="mode-confirm-title">{MODE_LABEL[mode]}</p>
+          {isResume && (
+            <p className="mode-confirm-line">前回中止した位置から再開します</p>
+          )}
           <p className="mode-confirm-line">
             {mode === "continue" || mode === "wrong" ? "次に解く範囲" : "絞り込み中"}:{" "}
             {scopeText()}
           </p>
           <p className="mode-confirm-line">
             対象 {confirmIds.length}問
-            {mode === "new" || mode === "continue"
+            {(mode === "new" || mode === "continue") && !isResume
               ? ` / 解答済み ${answeredCount}問`
               : ""}
           </p>
@@ -287,7 +352,7 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
               <p className="mode-confirm-line">対象の問題はありません。</p>
             ))}
 
-          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
             <button
               className="choice-btn"
               style={{ marginBottom: 0 }}
@@ -296,6 +361,15 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
             >
               {mode === "browse" ? "一覧を見る" : "ここから始める"}
             </button>
+            {isResume && (
+              <button
+                className="choice-btn"
+                style={{ marginBottom: 0 }}
+                onClick={startFromBeginning}
+              >
+                最初から始める
+              </button>
+            )}
             {(mode === "new" || mode === "browse") && (
               <button
                 className="choice-btn"
