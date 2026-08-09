@@ -1,9 +1,9 @@
 /**
  * ファイル: app/[qualification]/[id]/page.tsx
- * バージョン: v1.5
+ * バージョン: v1.6
  * 更新日: 2026-08-10
- * 内容: AnswerCardにmodeIds・examRound・themeを渡し、中止時に再開位置を
- *      保存できるようにした。
+ * 内容: AnswerCardにnextQuestionId(次の問題のid)を渡し、解答後の中止時に
+ *      次の問題を再開位置として保存できるようにした。
  */
 
 import { supabase } from "@/lib/supabase";
@@ -46,6 +46,7 @@ export default async function QuestionPage({
 
   let nextHref: string | null = null;
   let prevHref: string | null = null;
+  let nextQuestionId: number | null = null;
   let questionNumber = 1;
   let totalCount = 1;
   const sameThemeIds = (sameTheme ?? []).map((q) => q.id);
@@ -63,7 +64,8 @@ export default async function QuestionPage({
     questionNumber = currentIndex + 1;
 
     if (currentIndex !== -1 && currentIndex < modeIds.length - 1) {
-      nextHref = withFilter(`/${params.qualification}/${modeIds[currentIndex + 1]}`);
+      nextQuestionId = modeIds[currentIndex + 1];
+      nextHref = withFilter(`/${params.qualification}/${nextQuestionId}`);
     }
     if (currentIndex > 0) {
       prevHref = withFilter(`/${params.qualification}/${modeIds[currentIndex - 1]}`);
@@ -75,7 +77,8 @@ export default async function QuestionPage({
     questionNumber = currentIndex + 1;
 
     if (currentIndex < ids.length - 1) {
-      nextHref = withFilter(`/${params.qualification}/${ids[currentIndex + 1]}`);
+      nextQuestionId = ids[currentIndex + 1];
+      nextHref = withFilter(`/${params.qualification}/${nextQuestionId}`);
     }
     if (currentIndex > 0) {
       prevHref = withFilter(`/${params.qualification}/${ids[currentIndex - 1]}`);
@@ -88,6 +91,7 @@ export default async function QuestionPage({
         question={question}
         nextHref={nextHref}
         prevHref={prevHref}
+        nextQuestionId={nextQuestionId}
         questionNumber={questionNumber}
         totalCount={totalCount}
         sameThemeIds={sameThemeIds}
