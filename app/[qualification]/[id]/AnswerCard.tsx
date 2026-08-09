@@ -1,10 +1,10 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v2.9
+ * バージョン: v3.0
  * 更新日: 2026-08-10
- * 内容: 選択肢シャッフルを原則廃止し、shuffle_choicesがtrueの問題(漢字検定・
- *      食生活アドバイザー3級オリジナル問題など正解が偏っているもの)のみ
- *      シャッフルするよう変更。
+ * 内容: 解説表示後にも「中止する」ボタンを配置。解答済みの状態で中止した場合は
+ *      次の問題を再開位置として保存する(解いた問題を再度出さないため)。
+ *      最終問題で中止した場合は再開記録を消去する。
  */
 
 "use client";
@@ -39,6 +39,7 @@ export default function AnswerCard({
   question,
   nextHref,
   prevHref,
+  nextQuestionId,
   questionNumber,
   totalCount,
   sameThemeIds,
@@ -50,6 +51,7 @@ export default function AnswerCard({
   question: Question;
   nextHref: string | null;
   prevHref: string | null;
+  nextQuestionId: number | null;
   questionNumber: number;
   totalCount: number;
   sameThemeIds: number[];
@@ -99,7 +101,6 @@ export default function AnswerCard({
     if (!question.shuffle_choices) {
       setDisplayOrder(validNums);
     } else {
-      // 「該当なし」はシャッフルせず最後尾に固定
       const fixedNums = validNums.filter((n) => isNoneOption(choices[n - 1]));
       const shuffleNums = validNums.filter((n) => !isNoneOption(choices[n - 1]));
       setDisplayOrder([...shuffle(shuffleNums), ...fixedNums]);
@@ -133,7 +134,7 @@ export default function AnswerCard({
 
   const displayCorrect = origToDisplay.get(correctNum) ?? 1;
 
-  /** explanation内の丸数字を今回の表示順に付け替える(シャッフル時のみ意味を持つ) */
+  /** explanation内の丸数字を今回の表示順に付け替える(シャッフル時のみ) */
   const remappedExplanation = useMemo(() => {
     if (!question.explanation || displayOrder.length === 0) {
       return question.explanation;
@@ -170,21 +171,35 @@ export default function AnswerCard({
     });
   };
 
-  /** 中止時に現在位置を保存してモード選択画面へ戻る */
-  const handleStop = () => {
-    const resume = {
-      questionId: question.id,
-      ids: modeIds,
-      examRound,
-      theme,
-      savedAt: new Date().toISOString(),
-    };
-    localStorage.setItem(
-      `kakomon_resume_${qualification}`,
-      JSON.stringify(resume)
-    );
+  /**
+   * 中止してモード選択画面へ戻る。
+   * answered=true の場合は次の問題を再開位置として保存する。
+   * 次の問題が無い(最終問題)場合は再開記録を消す。
+   */
+  const stopWith = (resumeId: number | null) => {
+    const key = `kakomon_resume_${qualification}`;
+    if (resumeId == null) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          questionId: resumeId,
+          ids: modeIds,
+          examRound,
+          theme,
+          savedAt: new Date().toISOString(),
+        })
+      );
+    }
     router.push(`/${qualification}`);
   };
+
+  /** 解答前の中止:この問題から再開 */
+  const handleStopBefore = () => stopWith(question.id);
+
+  /** 解答後の中止:次の問題から再開(最終問題なら記録を消す) */
+  const handleStopAfter = () => stopWith(nextQuestionId);
 
   return (
     <div className="card">
@@ -200,7 +215,7 @@ export default function AnswerCard({
         ) : (
           <span />
         )}
-        <button className="nav-btn nav-btn-stop" onClick={handleStop}>
+        <button className="nav-btn nav-btn-stop" onClick={handleStopBefore}>
           中止する
         </button>
         {nextHref && (
@@ -253,10 +268,19 @@ export default function AnswerCard({
             <p dangerouslySetInnerHTML={{ __html: question.explanation }} />
           )}
 
-          {showModelAnswer && nextHref && (
-            <Link href={nextHref} className="choice-btn">
-              次の問題へ →
-            </Link>
+          {showModelAnswer && (
+            <div className="nav-row" style={{ marginTop: 8 }}>
+              {nextHref ? (
+                <Link href={nextHref} className="nav-btn">
+                  次の問題へ →
+                </Link>
+              ) : (
+                <span />
+              )}
+              <button className="nav-btn nav-btn-stop" onClick={handleStopAfter}>
+                中止する
+              </button>
+            </div>
           )}
         </div>
       ) : (
@@ -325,11 +349,18 @@ export default function AnswerCard({
                 <p className="translation-box">{question.translation}</p>
               )}
 
-              {nextHref && (
-                <Link href={nextHref} className="choice-btn">
-                  次の問題へ →
-                </Link>
-              )}
+              <div className="nav-row" style={{ marginTop: 8 }}>
+                {nextHref ? (
+                  <Link href={nextHref} className="nav-btn">
+                    次の問題へ →
+                  </Link>
+                ) : (
+                  <span />
+                )}
+                <button className="nav-btn nav-btn-stop" onClick={handleStopAfter}>
+                  中止する
+                </button>
+              </div>
             </div>
           )}
         </>
