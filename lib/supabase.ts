@@ -1,9 +1,9 @@
 /**
  * ファイル: lib/supabase.ts
- * バージョン: v1.0
- * 更新日: 2026-08-09
- * 内容: Question型にquestion_type('choice'|'essay')とmodel_answer(記述式の模範解答)を追加。
- *      記述式問題(第二次検定など)に対応。
+ * バージョン: v1.1
+ * 更新日: 2026-08-10
+ * 内容: Question型にshuffle_choices(選択肢をシャッフルするかどうかのフラグ)を追加。
+ *      正解が特定番号に偏っている問題群(漢字検定・食生活アドバイザー3級オリジナル問題)のみtrue。
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -36,4 +36,5 @@ export type Question = {
   translation: string | null;
   audio_url: string | null;
   image_url: string | null;
+  shuffle_choices: boolean;
 };
