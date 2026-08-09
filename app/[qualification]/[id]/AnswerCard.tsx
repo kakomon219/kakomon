@@ -1,14 +1,15 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v2.7
+ * バージョン: v2.8
  * 更新日: 2026-08-10
- * 内容: 選択肢シャッフル時、「該当なし」の選択肢はシャッフル対象から除外して
- *      常に最後尾に固定するよう変更(問題文「該当するものがない場合は6を選びなさい」との矛盾を解消)。
+ * 内容: 「中止する」を押した時点の問題id・絞り込み条件(ids/exam_round/theme)を
+ *      localStorageに保存し、「続きの問題」でその位置から再開できるようにした。
  */
 
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
@@ -41,6 +42,9 @@ export default function AnswerCard({
   totalCount,
   sameThemeIds,
   qualification,
+  modeIds,
+  examRound,
+  theme,
 }: {
   question: Question;
   nextHref: string | null;
@@ -49,7 +53,11 @@ export default function AnswerCard({
   totalCount: number;
   sameThemeIds: number[];
   qualification: string;
+  modeIds: string | null;
+  examRound: string | null;
+  theme: string | null;
 }) {
+  const router = useRouter();
   const [selected, setSelected] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
@@ -150,6 +158,22 @@ export default function AnswerCard({
     });
   };
 
+  /** 中止時に現在位置を保存してモード選択画面へ戻る */
+  const handleStop = () => {
+    const resume = {
+      questionId: question.id,
+      ids: modeIds,
+      examRound,
+      theme,
+      savedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(
+      `kakomon_resume_${qualification}`,
+      JSON.stringify(resume)
+    );
+    router.push(`/${qualification}`);
+  };
+
   return (
     <div className="card">
       <p className="question-number">
@@ -164,9 +188,9 @@ export default function AnswerCard({
         ) : (
           <span />
         )}
-        <Link href={`/${qualification}`} className="nav-btn nav-btn-stop">
+        <button className="nav-btn nav-btn-stop" onClick={handleStop}>
           中止する
-        </Link>
+        </button>
         {nextHref && (
           <Link href={nextHref} className="nav-btn">
             次の問題へ →
