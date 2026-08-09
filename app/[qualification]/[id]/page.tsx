@@ -1,10 +1,8 @@
 /**
  * ファイル: app/[qualification]/[id]/page.tsx
- * バージョン: v1.3
+ * バージョン: v1.4
  * 更新日: 2026-08-10
- * 内容: URLにidsパラメータ(新しい問題/続きの問題/間違えた問題で絞り込んだid列)がある場合、
- *      そのidリストの中だけで次・前・問題番号・全体数を計算し、一問一答形式でループできるようにした。
- *      idsが無い場合は従来通りtheme内ループ。
+ * 内容: AnswerCardにqualificationを渡し、「中止する」ボタンからモード選択画面へ戻れるようにした。
  */
 
 import Link from "next/link";
@@ -86,9 +84,6 @@ export default async function QuestionPage({
 
   return (
     <div>
-      <p>
-        <Link href={withFilter(`/${params.qualification}`)}>← 一覧に戻る</Link>
-      </p>
       <AnswerCard
         question={question}
         nextHref={nextHref}
@@ -96,6 +91,7 @@ export default async function QuestionPage({
         questionNumber={questionNumber}
         totalCount={totalCount}
         sameThemeIds={sameThemeIds}
+        qualification={params.qualification}
       />
     </div>
   );
