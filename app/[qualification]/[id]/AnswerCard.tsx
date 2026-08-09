@@ -1,4 +1,4 @@
-/**
+/** 
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
  * バージョン: v3.0
  * 更新日: 2026-08-10
