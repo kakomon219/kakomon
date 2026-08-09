@@ -1,9 +1,10 @@
 /**
  * ファイル: app/[qualification]/[id]/page.tsx
- * バージョン: v1.2
- * 更新日: 2026-07-26
- * 内容: AnswerCardにsameThemeIds(同じtheme内の全question id)を渡し、
- *      解答画面でそのテーマの回答数・正解数・誤答数を表示できるようにした
+ * バージョン: v1.3
+ * 更新日: 2026-08-10
+ * 内容: URLにidsパラメータ(新しい問題/続きの問題/間違えた問題で絞り込んだid列)がある場合、
+ *      そのidリストの中だけで次・前・問題番号・全体数を計算し、一問一答形式でループできるようにした。
+ *      idsが無い場合は従来通りtheme内ループ。
  */
 
 import Link from "next/link";
@@ -18,7 +19,7 @@ export default async function QuestionPage({
   searchParams,
 }: {
   params: { qualification: string; id: string };
-  searchParams: { exam_round?: string; theme?: string };
+  searchParams: { exam_round?: string; theme?: string; ids?: string };
 }) {
   const { data: question, error } = await supabase
     .from("questions")
@@ -41,6 +42,7 @@ export default async function QuestionPage({
   const filterQs = new URLSearchParams();
   if (searchParams.exam_round) filterQs.set("exam_round", searchParams.exam_round);
   if (searchParams.theme) filterQs.set("theme", searchParams.theme);
+  if (searchParams.ids) filterQs.set("ids", searchParams.ids);
   const filterQsStr = filterQs.toString();
   const withFilter = (path: string) => `${path}${filterQsStr ? `?${filterQsStr}` : ""}`;
 
@@ -50,7 +52,25 @@ export default async function QuestionPage({
   let totalCount = 1;
   const sameThemeIds = (sameTheme ?? []).map((q) => q.id);
 
-  if (sameTheme && sameTheme.length > 0) {
+  const modeIds = searchParams.ids
+    ? searchParams.ids
+        .split(",")
+        .map((s) => Number(s))
+        .filter((n) => !Number.isNaN(n))
+    : null;
+
+  if (modeIds && modeIds.length > 0) {
+    const currentIndex = modeIds.indexOf(question.id);
+    totalCount = modeIds.length;
+    questionNumber = currentIndex + 1;
+
+    if (currentIndex !== -1 && currentIndex < modeIds.length - 1) {
+      nextHref = withFilter(`/${params.qualification}/${modeIds[currentIndex + 1]}`);
+    }
+    if (currentIndex > 0) {
+      prevHref = withFilter(`/${params.qualification}/${modeIds[currentIndex - 1]}`);
+    }
+  } else if (sameTheme && sameTheme.length > 0) {
     const ids = sameTheme.map((q) => q.id);
     const currentIndex = ids.indexOf(question.id);
     totalCount = ids.length;
