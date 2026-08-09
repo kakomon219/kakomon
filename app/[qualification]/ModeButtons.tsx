@@ -1,9 +1,9 @@
 /**
  * ファイル: app/[qualification]/ModeButtons.tsx
- * バージョン: v0.4
- * 更新日: 2026-07-30
- * 内容: 各モードを押したら即遷移せず、確認パネルを表示してから開始する方式に変更。
- *      続きの問題は「解答済み/残り/次の問題」を表示してから開始できる。
+ * バージョン: v0.5
+ * 更新日: 2026-08-10
+ * 内容: 「新しい問題」「間違えた問題」も「続きの問題」と同様、一覧を経由せず
+ *      idsパラメータを付けて先頭の問題へ直接遷移し、一問一答形式で解けるように変更。
  */
 
 "use client";
@@ -94,12 +94,14 @@ export default function ModeButtons({
     setLoading("new");
     const answered = await getAnsweredIds(userId);
     const unanswered = questionIds.filter((id) => !answered.has(id));
+    const next = unanswered.length > 0 ? await fetchQuestion(unanswered[0]) : undefined;
     setLoading(null);
     setConfirm({
       mode: "new",
       title: "新しい問題",
       ids: unanswered,
       answeredCount: answered.size,
+      nextQuestion: next as Confirm["nextQuestion"],
     });
   };
 
@@ -127,27 +129,23 @@ export default function ModeButtons({
     if (!userId) return router.push("/select-user");
     setLoading("wrong");
     const wrongIds = await getLatestWrongIds(userId);
+    const next = wrongIds.length > 0 ? await fetchQuestion(wrongIds[0]) : undefined;
     setLoading(null);
     setConfirm({
       mode: "wrong",
       title: "間違えた問題",
       ids: wrongIds,
       answeredCount: 0,
+      nextQuestion: next as Confirm["nextQuestion"],
     });
   };
 
   const start = () => {
     if (!confirm || confirm.ids.length === 0) return;
     const qs = filterQs();
-
-    if (confirm.mode === "continue") {
-      const qsStr = qs.toString();
-      router.push(`/${qualification}/${confirm.ids[0]}${qsStr ? `?${qsStr}` : ""}`);
-      return;
-    }
     qs.set("ids", confirm.ids.join(","));
-    qs.set("title", confirm.title);
-    router.push(`/${qualification}/list?${qs.toString()}`);
+    const qsStr = qs.toString();
+    router.push(`/${qualification}/${confirm.ids[0]}${qsStr ? `?${qsStr}` : ""}`);
   };
 
   const preview = (text: string) =>
@@ -186,35 +184,19 @@ export default function ModeButtons({
         <div className="mode-confirm">
           <p className="mode-confirm-title">{confirm.title}</p>
 
-          {confirm.mode === "continue" && (
-            <>
-              <p className="mode-confirm-line">
-                解答済み {confirm.answeredCount}問 / 残り {confirm.ids.length}問
-              </p>
-              {confirm.nextQuestion ? (
-                <p className="mode-confirm-line">
-                  次の問題:{" "}
-                  {confirm.nextQuestion.question_no != null
-                    ? `No.${confirm.nextQuestion.question_no} `
-                    : ""}
-                  {preview(confirm.nextQuestion.question_text)}
-                </p>
-              ) : (
-                <p className="mode-confirm-line">未解答の問題はありません。</p>
-              )}
-            </>
-          )}
-
-          {confirm.mode === "new" && (
+          <p className="mode-confirm-line">
+            解答済み {confirm.answeredCount}問 / 対象 {confirm.ids.length}問
+          </p>
+          {confirm.nextQuestion ? (
             <p className="mode-confirm-line">
-              まだ解いていない問題が {confirm.ids.length}問 あります。次の画面で選べます。
+              最初の問題:{" "}
+              {confirm.nextQuestion.question_no != null
+                ? `No.${confirm.nextQuestion.question_no} `
+                : ""}
+              {preview(confirm.nextQuestion.question_text)}
             </p>
-          )}
-
-          {confirm.mode === "wrong" && (
-            <p className="mode-confirm-line">
-              直近で間違えた問題が {confirm.ids.length}問 あります。次の画面で選べます。
-            </p>
+          ) : (
+            <p className="mode-confirm-line">対象の問題はありません。</p>
           )}
 
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
@@ -224,7 +206,7 @@ export default function ModeButtons({
               onClick={start}
               disabled={confirm.ids.length === 0}
             >
-              {confirm.mode === "continue" ? "ここから始める" : "一覧へ進む"}
+              ここから始める
             </button>
             <button
               className="choice-btn"
