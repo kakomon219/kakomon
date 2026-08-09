@@ -1,9 +1,10 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v2.8
+ * バージョン: v2.9
  * 更新日: 2026-08-10
- * 内容: 「中止する」を押した時点の問題id・絞り込み条件(ids/exam_round/theme)を
- *      localStorageに保存し、「続きの問題」でその位置から再開できるようにした。
+ * 内容: 選択肢シャッフルを原則廃止し、shuffle_choicesがtrueの問題(漢字検定・
+ *      食生活アドバイザー3級オリジナル問題など正解が偏っているもの)のみ
+ *      シャッフルするよう変更。
  */
 
 "use client";
@@ -80,7 +81,7 @@ export default function AnswerCard({
     question.choice_6,
   ];
 
-  /** 問題が切り替わるたびに並びを引き直す(=解くたびにランダム) */
+  /** 並び順を決める。shuffle_choicesがtrueの問題のみランダム、それ以外は原順 */
   useEffect(() => {
     const choices = [
       question.choice_1,
@@ -95,17 +96,22 @@ export default function AnswerCard({
       .map((c, i) => (c ? i + 1 : null))
       .filter((n): n is number => n !== null);
 
-    // 「該当なし」はシャッフルせず最後尾に固定
-    const fixedNums = validNums.filter((n) => isNoneOption(choices[n - 1]));
-    const shuffleNums = validNums.filter((n) => !isNoneOption(choices[n - 1]));
+    if (!question.shuffle_choices) {
+      setDisplayOrder(validNums);
+    } else {
+      // 「該当なし」はシャッフルせず最後尾に固定
+      const fixedNums = validNums.filter((n) => isNoneOption(choices[n - 1]));
+      const shuffleNums = validNums.filter((n) => !isNoneOption(choices[n - 1]));
+      setDisplayOrder([...shuffle(shuffleNums), ...fixedNums]);
+    }
 
-    setDisplayOrder([...shuffle(shuffleNums), ...fixedNums]);
     setSelected(null);
     setShowExplanation(false);
     setShowTranslation(false);
     setShowModelAnswer(false);
   }, [
     question.id,
+    question.shuffle_choices,
     question.choice_1,
     question.choice_2,
     question.choice_3,
@@ -127,17 +133,23 @@ export default function AnswerCard({
 
   const displayCorrect = origToDisplay.get(correctNum) ?? 1;
 
-  /** explanation内の丸数字を今回の表示順に付け替える */
+  /** explanation内の丸数字を今回の表示順に付け替える(シャッフル時のみ意味を持つ) */
   const remappedExplanation = useMemo(() => {
     if (!question.explanation || displayOrder.length === 0) {
       return question.explanation;
     }
+    if (!question.shuffle_choices) return question.explanation;
     return question.explanation.replace(/[①②③④⑤⑥]/g, (mark) => {
       const origNum = CIRCLED.indexOf(mark) + 1;
       const newNum = origToDisplay.get(origNum);
       return newNum ? CIRCLED[newNum - 1] : mark;
     });
-  }, [question.explanation, origToDisplay, displayOrder.length]);
+  }, [
+    question.explanation,
+    question.shuffle_choices,
+    origToDisplay,
+    displayOrder.length,
+  ]);
 
   const isAnswered = selected !== null;
   const isCorrect = selected === correctNum;
