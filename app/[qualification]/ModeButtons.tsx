@@ -1,10 +1,10 @@
 /**
  * ファイル: app/[qualification]/ModeButtons.tsx
- * バージョン: v0.6
+ * バージョン: v0.7
  * 更新日: 2026-08-10
- * 内容: 「新しい問題/続きの問題/間違えた問題/問題一覧を見る」を選んだ後、
- *      級選択→テーマ選択→確認パネル、という段階フローに変更。
- *      確認パネルには選択中の級・テーマを表示する。
+ * 内容: 「続きの問題」「間違えた問題」は級・テーマ選択をスキップし、資格全体から
+ *      直接対象を集めて確認パネルへ進むように変更。確認パネルには次に解く問題が
+ *      属する級・テーマを表示する。「新しい問題」は従来通り級→テーマの選択フロー。
  */
 
 "use client";
@@ -67,33 +67,20 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
   const preview = (text: string) =>
     text.length > 40 ? `${text.slice(0, 40)}…` : text;
 
-  const startMode = (m: Mode) => {
-    setMode(m);
-    setSelectedExamRound(undefined);
-    setSelectedTheme(undefined);
-    setStep("examRound");
-  };
-
-  const chooseExamRound = (examRound: string | undefined) => {
-    setSelectedExamRound(examRound);
-    setSelectedTheme(undefined);
-    setStep("theme");
-  };
-
-  const chooseTheme = async (theme: string | undefined) => {
-    if (!mode) return;
-    setSelectedTheme(theme);
+  /** 指定した母集団に対してモードごとの対象idを算出し、確認パネルへ進む */
+  const buildConfirm = async (
+    m: Mode,
+    pool: QuestionMeta[],
+    examRound: string | undefined,
+    theme: string | undefined
+  ) => {
     setLoading(true);
-
-    let pool = allQuestions;
-    if (selectedExamRound) pool = pool.filter((q) => q.exam_round === selectedExamRound);
-    if (theme) pool = pool.filter((q) => q.theme === theme);
     const poolIds = pool.map((q) => q.id);
 
     let targetIds = poolIds;
     let answered = 0;
 
-    if (mode !== "browse") {
+    if (m !== "browse") {
       const userId = getUserId();
       if (!userId) {
         setLoading(false);
@@ -101,7 +88,7 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
         return;
       }
 
-      if (mode === "new" || mode === "continue") {
+      if (m === "new" || m === "continue") {
         const { data } = await supabase
           .from("attempts")
           .select("question_id")
@@ -110,7 +97,7 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
         const answeredSet = new Set((data ?? []).map((a) => a.question_id));
         answered = answeredSet.size;
         targetIds = poolIds.filter((id) => !answeredSet.has(id)).sort((a, b) => a - b);
-      } else if (mode === "wrong") {
+      } else if (m === "wrong") {
         const { data } = await supabase
           .from("attempts")
           .select("question_id, is_correct, answered_at")
@@ -126,11 +113,15 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
         }
         targetIds = Array.from(latestByQuestion.entries())
           .filter(([, isCorrect]) => !isCorrect)
-          .map(([qid]) => qid);
+          .map(([qid]) => qid)
+          .sort((a, b) => a - b);
       }
     }
 
     const first = pool.find((q) => q.id === targetIds[0]);
+    setMode(m);
+    setSelectedExamRound(examRound);
+    setSelectedTheme(theme);
     setConfirmIds(targetIds);
     setAnsweredCount(answered);
     setFirstQuestion(first);
@@ -138,25 +129,45 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
     setStep("confirm");
   };
 
+  const startMode = (m: Mode) => {
+    // 続きの問題・間違えた問題は選択不要。資格全体から直接対象を集める
+    if (m === "continue" || m === "wrong") {
+      buildConfirm(m, allQuestions, undefined, undefined);
+      return;
+    }
+    setMode(m);
+    setSelectedExamRound(undefined);
+    setSelectedTheme(undefined);
+    setStep("examRound");
+  };
+
+  const chooseExamRound = (examRound: string | undefined) => {
+    setSelectedExamRound(examRound);
+    setSelectedTheme(undefined);
+    setStep("theme");
+  };
+
+  const chooseTheme = async (theme: string | undefined) => {
+    if (!mode) return;
+    let pool = allQuestions;
+    if (selectedExamRound) pool = pool.filter((q) => q.exam_round === selectedExamRound);
+    if (theme) pool = pool.filter((q) => q.theme === theme);
+    await buildConfirm(mode, pool, selectedExamRound, theme);
+  };
+
   const start = () => {
     if (confirmIds.length === 0) return;
     const qs = new URLSearchParams();
     if (selectedExamRound) qs.set("exam_round", selectedExamRound);
     if (selectedTheme) qs.set("theme", selectedTheme);
+    qs.set("ids", confirmIds.join(","));
 
     if (mode === "browse") {
-      qs.set("ids", confirmIds.join(","));
       qs.set("title", MODE_LABEL.browse);
       router.push(`/${qualification}/list?${qs.toString()}`);
       return;
     }
-
-    qs.set("ids", confirmIds.join(","));
     router.push(`/${qualification}/${confirmIds[0]}?${qs.toString()}`);
-  };
-
-  const backTo = (target: Step) => {
-    setStep(target);
   };
 
   const resetToMenu = () => {
@@ -168,24 +179,35 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
     setFirstQuestion(undefined);
   };
 
+  /** 確認パネルに出す「今どこを解くか」の表示 */
+  const scopeText = () => {
+    if (mode === "continue" || mode === "wrong") {
+      if (!firstQuestion) return "対象なし";
+      return `${firstQuestion.exam_round ?? "全て"} / ${firstQuestion.theme ?? "全て"}`;
+    }
+    return `${selectedExamRound ?? "全て"} / ${selectedTheme ?? "全て"}`;
+  };
+
   return (
     <div style={{ margin: "12px 0" }}>
       {step === "menu" && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button className="tab" onClick={() => startMode("new")}>
+          <button className="tab" onClick={() => startMode("new")} disabled={loading}>
             新しい問題
           </button>
-          <button className="tab" onClick={() => startMode("continue")}>
+          <button className="tab" onClick={() => startMode("continue")} disabled={loading}>
             続きの問題
           </button>
-          <button className="tab" onClick={() => startMode("wrong")}>
+          <button className="tab" onClick={() => startMode("wrong")} disabled={loading}>
             間違えた問題
           </button>
-          <button className="tab" onClick={() => startMode("browse")}>
+          <button className="tab" onClick={() => startMode("browse")} disabled={loading}>
             問題一覧を見る
           </button>
         </div>
       )}
+
+      {step === "menu" && loading && <p>読み込み中...</p>}
 
       {step === "examRound" && mode && (
         <div>
@@ -233,7 +255,7 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
             ))}
           </div>
           <p>
-            <button className="choice-btn" onClick={() => backTo("examRound")}>
+            <button className="choice-btn" onClick={() => setStep("examRound")}>
               ← 級選択に戻る
             </button>
           </p>
@@ -245,11 +267,14 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
         <div className="mode-confirm">
           <p className="mode-confirm-title">{MODE_LABEL[mode]}</p>
           <p className="mode-confirm-line">
-            絞り込み中: {selectedExamRound ?? "全て"} / {selectedTheme ?? "全て"}
+            {mode === "continue" || mode === "wrong" ? "次に解く範囲" : "絞り込み中"}:{" "}
+            {scopeText()}
           </p>
           <p className="mode-confirm-line">
             対象 {confirmIds.length}問
-            {mode !== "browse" ? ` / 解答済み ${answeredCount}問` : ""}
+            {mode === "new" || mode === "continue"
+              ? ` / 解答済み ${answeredCount}問`
+              : ""}
           </p>
           {mode !== "browse" &&
             (firstQuestion ? (
@@ -271,13 +296,15 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
             >
               {mode === "browse" ? "一覧を見る" : "ここから始める"}
             </button>
-            <button
-              className="choice-btn"
-              style={{ marginBottom: 0 }}
-              onClick={() => backTo("theme")}
-            >
-              ← テーマ選択に戻る
-            </button>
+            {(mode === "new" || mode === "browse") && (
+              <button
+                className="choice-btn"
+                style={{ marginBottom: 0 }}
+                onClick={() => setStep("theme")}
+              >
+                ← テーマ選択に戻る
+              </button>
+            )}
             <button
               className="choice-btn"
               style={{ marginBottom: 0 }}
