@@ -1,11 +1,11 @@
 /**
  * ファイル: app/[qualification]/[id]/page.tsx
- * バージョン: v1.4
+ * バージョン: v1.5
  * 更新日: 2026-08-10
- * 内容: AnswerCardにqualificationを渡し、「中止する」ボタンからモード選択画面へ戻れるようにした。
+ * 内容: AnswerCardにmodeIds・examRound・themeを渡し、中止時に再開位置を
+ *      保存できるようにした。
  */
 
-import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import AnswerCard from "./AnswerCard";
 
@@ -92,6 +92,9 @@ export default async function QuestionPage({
         totalCount={totalCount}
         sameThemeIds={sameThemeIds}
         qualification={params.qualification}
+        modeIds={searchParams.ids ?? null}
+        examRound={searchParams.exam_round ?? null}
+        theme={searchParams.theme ?? null}
       />
     </div>
   );
