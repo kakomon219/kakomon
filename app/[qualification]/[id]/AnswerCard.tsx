@@ -1,10 +1,10 @@
-/** 
+/**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v3.0
+ * バージョン: v3.1
  * 更新日: 2026-08-10
- * 内容: 解説表示後にも「中止する」ボタンを配置。解答済みの状態で中止した場合は
- *      次の問題を再開位置として保存する(解いた問題を再度出さないため)。
- *      最終問題で中止した場合は再開記録を消去する。
+ * 内容: 学習状況の「間違えた問題一覧」から来た場合(from=review)、正解時に
+ *      「一覧から消す」ボタンを表示しreview_clearsへ記録して学習状況へ戻る。
+ *      不正解時および解答前は「学習状況へ戻る」ボタンのみ表示する。
  */
 
 "use client";
@@ -66,6 +66,8 @@ export default function AnswerCard({
   const [showTranslation, setShowTranslation] = useState(false);
   const [showModelAnswer, setShowModelAnswer] = useState(false);
   const [displayOrder, setDisplayOrder] = useState<number[]>([]);
+  const [fromReview, setFromReview] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const { play } = useAudioPlayer();
 
   /** 記述式かどうか */
@@ -82,6 +84,12 @@ export default function AnswerCard({
     question.choice_5,
     question.choice_6,
   ];
+
+  /** 学習状況の「間違えた問題一覧」から来たかどうか */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setFromReview(params.get("from") === "review");
+  }, []);
 
   /** 並び順を決める。shuffle_choicesがtrueの問題のみランダム、それ以外は原順 */
   useEffect(() => {
@@ -171,6 +179,28 @@ export default function AnswerCard({
     });
   };
 
+  /** 間違えた問題一覧から消して学習状況へ戻る */
+  const handleClearFromReview = async () => {
+    const userId = localStorage.getItem("kakomon_user_id");
+    if (!userId) {
+      router.push("/learning-status");
+      return;
+    }
+    setClearing(true);
+    await supabase.from("review_clears").upsert(
+      {
+        user_id: Number(userId),
+        question_id: question.id,
+        cleared_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,question_id" }
+    );
+    router.push("/learning-status");
+  };
+
+  /** 消さずに学習状況へ戻る */
+  const handleBackToStatus = () => router.push("/learning-status");
+
   /**
    * 中止してモード選択画面へ戻る。
    * answered=true の場合は次の問題を再開位置として保存する。
@@ -201,6 +231,44 @@ export default function AnswerCard({
   /** 解答後の中止:次の問題から再開(最終問題なら記録を消す) */
   const handleStopAfter = () => stopWith(nextQuestionId);
 
+  /** 解答後に出す操作ボタン群(復習モードでは学習状況への導線を優先) */
+  const renderAfterButtons = () => {
+    if (fromReview) {
+      return (
+        <div className="nav-row" style={{ marginTop: 8 }}>
+          {isCorrect && !isEssay ? (
+            <button
+              className="nav-btn nav-btn-clear"
+              disabled={clearing}
+              onClick={handleClearFromReview}
+            >
+              {clearing ? "消しています..." : "一覧から消す"}
+            </button>
+          ) : (
+            <span />
+          )}
+          <button className="nav-btn" onClick={handleBackToStatus}>
+            学習状況へ戻る
+          </button>
+        </div>
+      );
+    }
+    return (
+      <div className="nav-row" style={{ marginTop: 8 }}>
+        {nextHref ? (
+          <Link href={nextHref} className="nav-btn">
+            次の問題へ →
+          </Link>
+        ) : (
+          <span />
+        )}
+        <button className="nav-btn nav-btn-stop" onClick={handleStopAfter}>
+          中止する
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="card">
       <p className="question-number">
@@ -215,10 +283,16 @@ export default function AnswerCard({
         ) : (
           <span />
         )}
-        <button className="nav-btn nav-btn-stop" onClick={handleStopBefore}>
-          中止する
-        </button>
-        {nextHref && (
+        {fromReview ? (
+          <button className="nav-btn" onClick={handleBackToStatus}>
+            学習状況へ戻る
+          </button>
+        ) : (
+          <button className="nav-btn nav-btn-stop" onClick={handleStopBefore}>
+            中止する
+          </button>
+        )}
+        {nextHref && !fromReview && (
           <Link href={nextHref} className="nav-btn">
             次の問題へ →
           </Link>
@@ -268,20 +342,7 @@ export default function AnswerCard({
             <p dangerouslySetInnerHTML={{ __html: question.explanation }} />
           )}
 
-          {showModelAnswer && (
-            <div className="nav-row" style={{ marginTop: 8 }}>
-              {nextHref ? (
-                <Link href={nextHref} className="nav-btn">
-                  次の問題へ →
-                </Link>
-              ) : (
-                <span />
-              )}
-              <button className="nav-btn nav-btn-stop" onClick={handleStopAfter}>
-                中止する
-              </button>
-            </div>
-          )}
+          {showModelAnswer && renderAfterButtons()}
         </div>
       ) : (
         <>
@@ -349,18 +410,7 @@ export default function AnswerCard({
                 <p className="translation-box">{question.translation}</p>
               )}
 
-              <div className="nav-row" style={{ marginTop: 8 }}>
-                {nextHref ? (
-                  <Link href={nextHref} className="nav-btn">
-                    次の問題へ →
-                  </Link>
-                ) : (
-                  <span />
-                )}
-                <button className="nav-btn nav-btn-stop" onClick={handleStopAfter}>
-                  中止する
-                </button>
-              </div>
+              {renderAfterButtons()}
             </div>
           )}
         </>
