@@ -1,8 +1,10 @@
 /**
  * ファイル: app/learning-status/page.tsx
- * バージョン: v1.7
- * 更新日: 2026-07-30
- * 内容: 表示対象ユーザーを選ぶタブを追加(?user_id=xx)。未指定時はlocalStorageの自分を表示。
+ * バージョン: v1.8
+ * 更新日: 2026-08-10
+ * 内容: 間違えた問題一覧を「解答ごと」から「問題ごと」に集約。累計の間違い回数を表示し、
+ *      回数の多い順に並べる。review_clearsで一度消した問題は非表示にし、消した日時より後に
+ *      再度間違えた場合は自動で再表示する。解き直しリンクに from=review を付与。
  */
 
 "use client";
@@ -14,20 +16,28 @@ import { supabase } from "@/lib/supabase";
 
 type UserRow = { id: number; name: string };
 
+type QuestionRow = {
+  id: number;
+  qualification: string;
+  exam_round: string;
+  theme: string;
+  question_text: string;
+  correct_answer: number;
+  explanation: string | null;
+};
+
 type AttemptRow = {
   id: number;
   selected_answer: number;
   is_correct: boolean;
   answered_at: string;
-  questions: {
-    id: number;
-    qualification: string;
-    exam_round: string;
-    theme: string;
-    question_text: string;
-    correct_answer: number;
-    explanation: string | null;
-  } | null;
+  questions: QuestionRow | null;
+};
+
+type WrongItem = {
+  question: QuestionRow;
+  wrongCount: number;
+  lastWrongAt: number;
 };
 
 type ThemeStat = { total: number; correct: number };
@@ -51,7 +61,7 @@ function LearningStatusContent() {
   const [viewUserId, setViewUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [tree, setTree] = useState<Record<string, QualStat>>({});
-  const [wrongList, setWrongList] = useState<AttemptRow[]>([]);
+  const [wrongList, setWrongList] = useState<WrongItem[]>([]);
   const [today, setToday] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -82,7 +92,7 @@ function LearningStatusContent() {
     })();
   }, []);
 
-  // 解答履歴を取得して集計
+  // 解答履歴と「消した記録」を取得して集計
   useEffect(() => {
     if (viewUserId === null) {
       setLoading(false);
@@ -91,37 +101,49 @@ function LearningStatusContent() {
     setLoading(true);
 
     (async () => {
-      const { data, error } = await supabase
-        .from("attempts")
-        .select(
-          `
-          id,
-          selected_answer,
-          is_correct,
-          answered_at,
-          questions (
+      const [attemptsRes, clearsRes] = await Promise.all([
+        supabase
+          .from("attempts")
+          .select(
+            `
             id,
-            qualification,
-            exam_round,
-            theme,
-            question_text,
-            correct_answer,
-            explanation
+            selected_answer,
+            is_correct,
+            answered_at,
+            questions (
+              id,
+              qualification,
+              exam_round,
+              theme,
+              question_text,
+              correct_answer,
+              explanation
+            )
+          `
           )
-        `
-        )
-        .eq("user_id", viewUserId)
-        .order("answered_at", { ascending: false });
+          .eq("user_id", viewUserId)
+          .order("answered_at", { ascending: false }),
+        supabase
+          .from("review_clears")
+          .select("question_id, cleared_at")
+          .eq("user_id", viewUserId),
+      ]);
 
-      if (error || !data) {
+      if (attemptsRes.error || !attemptsRes.data) {
         setLoading(false);
         return;
       }
 
-      const newTree: Record<string, QualStat> = {};
-      const newWrongList: AttemptRow[] = [];
+      // 問題ごとの「消した日時」
+      const clearedMap = new Map<number, number>();
+      (clearsRes.data ?? []).forEach((c: { question_id: number; cleared_at: string }) => {
+        clearedMap.set(c.question_id, new Date(c.cleared_at).getTime());
+      });
 
-      (data as unknown as AttemptRow[]).forEach((a) => {
+      const newTree: Record<string, QualStat> = {};
+      const wrongMap = new Map<number, WrongItem>();
+
+      (attemptsRes.data as unknown as AttemptRow[]).forEach((a) => {
         const q = a.questions;
         if (!q) return;
         if (filterQualification && q.qualification !== filterQualification) return;
@@ -140,8 +162,28 @@ function LearningStatusContent() {
         themes[q.theme].total++;
         if (a.is_correct) themes[q.theme].correct++;
 
-        if (!a.is_correct) newWrongList.push(a);
+        if (!a.is_correct) {
+          const at = new Date(a.answered_at).getTime();
+          const prev = wrongMap.get(q.id);
+          if (prev) {
+            prev.wrongCount++;
+            if (at > prev.lastWrongAt) prev.lastWrongAt = at;
+          } else {
+            wrongMap.set(q.id, { question: q, wrongCount: 1, lastWrongAt: at });
+          }
+        }
       });
+
+      // 消した日時より後に間違えたものだけ残す
+      const newWrongList = Array.from(wrongMap.values())
+        .filter((w) => {
+          const clearedAt = clearedMap.get(w.question.id);
+          if (clearedAt === undefined) return true;
+          return w.lastWrongAt > clearedAt;
+        })
+        .sort(
+          (a, b) => b.wrongCount - a.wrongCount || b.lastWrongAt - a.lastWrongAt
+        );
 
       setTree(newTree);
       setWrongList(newWrongList);
@@ -151,8 +193,7 @@ function LearningStatusContent() {
 
   const rate = (c: number, t: number) => (t > 0 ? Math.round((c / t) * 100) : 0);
 
-  const viewUserName =
-    users.find((u) => u.id === viewUserId)?.name ?? "";
+  const viewUserName = users.find((u) => u.id === viewUserId)?.name ?? "";
 
   const buildUserHref = (uid: number) => {
     const qs = new URLSearchParams();
@@ -181,9 +222,9 @@ function LearningStatusContent() {
 
     if (wrongList.length > 0) {
       lines.push(`■ 間違えた問題 (${wrongList.length}問)`);
-      wrongList.forEach((a, i) => {
-        lines.push(`${i + 1}. [${a.questions?.exam_round} / ${a.questions?.theme}]`);
-        lines.push(`   ${a.questions?.question_text}`);
+      wrongList.forEach((w, i) => {
+        lines.push(`${i + 1}. [${w.question.exam_round} / ${w.question.theme}] ${w.wrongCount}回`);
+        lines.push(`   ${w.question.question_text}`);
         lines.push("");
       });
     }
@@ -237,7 +278,7 @@ function LearningStatusContent() {
             戻る
           </Link>
           <span>{today}</span>
-          <span>v1.7</span>
+          <span>v1.8</span>
         </div>
         <div className="status-header-path">app/learning-status/page.tsx</div>
       </header>
@@ -307,29 +348,31 @@ function LearningStatusContent() {
 
           <div className="card">
             <h2>間違えた問題一覧({wrongList.length}問)</h2>
+            <p style={{ fontSize: 12, color: "#888", margin: "0 0 10px 0" }}>
+              間違えた回数の多い順
+            </p>
             {wrongList.length === 0 && <p>間違えた問題はありません。</p>}
 
-            {wrongList.map((a) => (
-              <div key={a.id} className="status-wrong-item">
+            {wrongList.map((w) => (
+              <div key={w.question.id} className="status-wrong-item">
+                <p className="status-wrong-count">⚠ {w.wrongCount}回間違えた</p>
                 <p className="status-wrong-meta">
-                  {a.questions?.qualification} / {a.questions?.exam_round} /{" "}
-                  {a.questions?.theme}
+                  {w.question.qualification} / {w.question.exam_round} /{" "}
+                  {w.question.theme}
                 </p>
-                <p>{a.questions?.question_text}</p>
-                {a.questions?.explanation && (
+                <p>{w.question.question_text}</p>
+                {w.question.explanation && (
                   <p
                     className="status-wrong-meta"
-                    dangerouslySetInnerHTML={{ __html: a.questions.explanation }}
+                    dangerouslySetInnerHTML={{ __html: w.question.explanation }}
                   />
                 )}
-                {a.questions && (
-                  <Link
-                    href={`/${a.questions.qualification}/${a.questions.id}`}
-                    className="choice-btn"
-                  >
-                    この問題を解き直す
-                  </Link>
-                )}
+                <Link
+                  href={`/${w.question.qualification}/${w.question.id}?from=review`}
+                  className="choice-btn"
+                >
+                  この問題を解き直す
+                </Link>
               </div>
             ))}
           </div>
