@@ -1,9 +1,9 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v3.2
+ * バージョン: v3.3
  * 更新日: 2026-08-10
- * 内容: 学習状況ページへ戻る際に qualification をクエリに引き継ぎ、
- *      資格で絞り込んだ状態が維持されるようにした。
+ * 内容: 戻り先をクエリの back から取得するように変更。学習状況ページの絞り込みや
+ *      ユーザー選択を含めた元の状態にそのまま戻れるようにした。
  */
 
 "use client";
@@ -66,6 +66,7 @@ export default function AnswerCard({
   const [showModelAnswer, setShowModelAnswer] = useState(false);
   const [displayOrder, setDisplayOrder] = useState<number[]>([]);
   const [fromReview, setFromReview] = useState(false);
+  const [statusHref, setStatusHref] = useState("/learning-status");
   const [clearing, setClearing] = useState(false);
   const { play } = useAudioPlayer();
 
@@ -74,11 +75,6 @@ export default function AnswerCard({
 
   /** correct_answerをnull安全な数値に正規化 */
   const correctNum: number = question.correct_answer ?? 0;
-
-  /** 学習状況ページのURL(資格の絞り込みを引き継ぐ) */
-  const statusHref = `/learning-status?qualification=${encodeURIComponent(
-    qualification
-  )}`;
 
   const rawChoices = [
     question.choice_1,
@@ -89,10 +85,16 @@ export default function AnswerCard({
     question.choice_6,
   ];
 
-  /** 学習状況の「間違えた問題一覧」から来たかどうか */
+  /** 学習状況の一覧から来たかどうかと、その戻り先を取得 */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setFromReview(params.get("from") === "review");
+
+    const back = params.get("back");
+    // 外部URLへの遷移を防ぐため、自サイト内のパスのみ許可する
+    if (back && back.startsWith("/")) {
+      setStatusHref(back);
+    }
   }, []);
 
   /** 並び順を決める。shuffle_choicesがtrueの問題のみランダム、それ以外は原順 */
@@ -280,7 +282,7 @@ export default function AnswerCard({
       </p>
 
       <div className="nav-row">
-        {prevHref ? (
+        {prevHref && !fromReview ? (
           <Link href={prevHref} className="nav-btn">
             ← 前の問題へ
           </Link>
