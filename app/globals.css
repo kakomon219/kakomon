@@ -1,9 +1,9 @@
 /**
  * ファイル: app/globals.css
- * バージョン: v2.0
+ * バージョン: v2.1
  * 更新日: 2026-08-10
- * 内容: 未定義だった .nav-btn-stop(中止ボタン)、.listening-hint(リスニングの案内文)、
- *      .translation-box(日本語訳の表示枠)を追加
+ * 内容: 間違えた問題一覧の解説折りたたみ用(.status-explanation)と、
+ *      一覧から消した旨の表示(.cleared-note)を追加
  */
 
 body {
@@ -80,6 +80,17 @@ a {
   padding: 12px;
   border-radius: 8px;
   background: #fff;
+}
+
+.cleared-note {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  margin: 0;
 }
 
 .listening-hint {
@@ -262,6 +273,24 @@ a {
   font-size: 0.75rem;
   color: #888;
   margin: 4px 0;
+}
+
+.status-explanation {
+  margin: 8px 0;
+}
+
+.status-explanation > summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #666;
+  padding: 6px 0;
+}
+
+.status-explanation-body {
+  font-size: 0.8rem;
+  line-height: 1.7;
+  color: #555;
+  padding: 8px 0 0 0;
 }
 
 /* ============================================
