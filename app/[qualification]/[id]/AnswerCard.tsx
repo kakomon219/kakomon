@@ -1,9 +1,10 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v3.3
+ * バージョン: v3.4
  * 更新日: 2026-08-10
- * 内容: 戻り先をクエリの back から取得するように変更。学習状況ページの絞り込みや
- *      ユーザー選択を含めた元の状態にそのまま戻れるようにした。
+ * 内容: from=wrong(間違えた問題モード)に対応。正解時に「一覧から消す」を表示しつつ
+ *      「次の問題へ」のループは維持する。from=review(学習状況からの1問復習)は
+ *      従来どおり学習状況ページへ戻る導線のみとする。
  */
 
 "use client";
@@ -66,8 +67,10 @@ export default function AnswerCard({
   const [showModelAnswer, setShowModelAnswer] = useState(false);
   const [displayOrder, setDisplayOrder] = useState<number[]>([]);
   const [fromReview, setFromReview] = useState(false);
+  const [fromWrong, setFromWrong] = useState(false);
   const [statusHref, setStatusHref] = useState("/learning-status");
   const [clearing, setClearing] = useState(false);
+  const [cleared, setCleared] = useState(false);
   const { play } = useAudioPlayer();
 
   /** 記述式かどうか */
@@ -85,10 +88,12 @@ export default function AnswerCard({
     question.choice_6,
   ];
 
-  /** 学習状況の一覧から来たかどうかと、その戻り先を取得 */
+  /** 起動元(学習状況の1問復習 / 間違えた問題モード)と戻り先を取得 */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    setFromReview(params.get("from") === "review");
+    const from = params.get("from");
+    setFromReview(from === "review");
+    setFromWrong(from === "wrong");
 
     const back = params.get("back");
     // 外部URLへの遷移を防ぐため、自サイト内のパスのみ許可する
@@ -124,6 +129,7 @@ export default function AnswerCard({
     setShowExplanation(false);
     setShowTranslation(false);
     setShowModelAnswer(false);
+    setCleared(false);
   }, [
     question.id,
     question.shuffle_choices,
@@ -185,14 +191,10 @@ export default function AnswerCard({
     });
   };
 
-  /** 間違えた問題一覧から消して学習状況へ戻る */
-  const handleClearFromReview = async () => {
+  /** review_clearsに記録して「間違えた問題」から外す */
+  const clearFromWrongList = async () => {
     const userId = localStorage.getItem("kakomon_user_id");
-    if (!userId) {
-      router.push(statusHref);
-      return;
-    }
-    setClearing(true);
+    if (!userId) return false;
     await supabase.from("review_clears").upsert(
       {
         user_id: Number(userId),
@@ -201,7 +203,22 @@ export default function AnswerCard({
       },
       { onConflict: "user_id,question_id" }
     );
+    return true;
+  };
+
+  /** 学習状況からの1問復習:消して元のページへ戻る */
+  const handleClearAndBack = async () => {
+    setClearing(true);
+    await clearFromWrongList();
     router.push(statusHref);
+  };
+
+  /** 間違えた問題モード:消してその場に留まる(次の問題へは自分で進む) */
+  const handleClearStay = async () => {
+    setClearing(true);
+    const ok = await clearFromWrongList();
+    setClearing(false);
+    if (ok) setCleared(true);
   };
 
   /** 消さずに学習状況へ戻る */
@@ -237,16 +254,20 @@ export default function AnswerCard({
   /** 解答後の中止:次の問題から再開(最終問題なら記録を消す) */
   const handleStopAfter = () => stopWith(nextQuestionId);
 
-  /** 解答後に出す操作ボタン群(復習モードでは学習状況への導線を優先) */
+  /** 正解時に「一覧から消す」を出せるか(記述式は正誤記録がないため対象外) */
+  const canClear = isCorrect && !isEssay;
+
+  /** 解答後に出す操作ボタン群 */
   const renderAfterButtons = () => {
+    // 学習状況からの1問復習:学習状況へ戻る導線のみ
     if (fromReview) {
       return (
         <div className="nav-row" style={{ marginTop: 8 }}>
-          {isCorrect && !isEssay ? (
+          {canClear ? (
             <button
               className="nav-btn nav-btn-clear"
               disabled={clearing}
-              onClick={handleClearFromReview}
+              onClick={handleClearAndBack}
             >
               {clearing ? "消しています..." : "一覧から消す"}
             </button>
@@ -259,19 +280,39 @@ export default function AnswerCard({
         </div>
       );
     }
+
+    // 間違えた問題モード:消す操作を出しつつ、次の問題へのループは維持
     return (
-      <div className="nav-row" style={{ marginTop: 8 }}>
-        {nextHref ? (
-          <Link href={nextHref} className="nav-btn">
-            次の問題へ →
-          </Link>
-        ) : (
-          <span />
+      <>
+        {fromWrong && canClear && (
+          <div style={{ marginTop: 8 }}>
+            {cleared ? (
+              <p className="cleared-note">✓ 間違えた問題一覧から消しました</p>
+            ) : (
+              <button
+                className="choice-btn nav-btn-clear"
+                disabled={clearing}
+                onClick={handleClearStay}
+                style={{ textAlign: "center" }}
+              >
+                {clearing ? "消しています..." : "間違えた問題一覧から消す"}
+              </button>
+            )}
+          </div>
         )}
-        <button className="nav-btn nav-btn-stop" onClick={handleStopAfter}>
-          中止する
-        </button>
-      </div>
+        <div className="nav-row" style={{ marginTop: 8 }}>
+          {nextHref ? (
+            <Link href={nextHref} className="nav-btn">
+              次の問題へ →
+            </Link>
+          ) : (
+            <span />
+          )}
+          <button className="nav-btn nav-btn-stop" onClick={handleStopAfter}>
+            中止する
+          </button>
+        </div>
+      </>
     );
   };
 
