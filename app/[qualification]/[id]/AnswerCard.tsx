@@ -1,10 +1,9 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v3.4
- * 更新日: 2026-08-10
- * 内容: from=wrong(間違えた問題モード)に対応。正解時に「一覧から消す」を表示しつつ
- *      「次の問題へ」のループは維持する。from=review(学習状況からの1問復習)は
- *      従来どおり学習状況ページへ戻る導線のみとする。
+ * バージョン: v3.5
+ * 更新日: 2026-08-11
+ * 内容: image_url2(2枚目の図表画像)の表示に対応。image_urlの直下に同じ表示ルールで並べる。
+ *      記述式(essay)のときは2枚とも幅いっぱい(question-image-wide)で表示する。
  */
 
 "use client";
@@ -75,6 +74,11 @@ export default function AnswerCard({
 
   /** 記述式かどうか */
   const isEssay = question.question_type === "essay";
+
+  /** 図表画像に付けるクラス(記述式は幅いっぱい) */
+  const imageClass = isEssay
+    ? "question-image question-image-wide"
+    : "question-image";
 
   /** correct_answerをnull安全な数値に正規化 */
   const correctNum: number = question.correct_answer ?? 0;
@@ -357,12 +361,14 @@ export default function AnswerCard({
       )}
 
       {question.image_url && (
+        <img src={question.image_url} alt="問題の図表" className={imageClass} />
+      )}
+
+      {question.image_url2 && (
         <img
-          src={question.image_url}
-          alt="問題の図表"
-          className={
-            isEssay ? "question-image question-image-wide" : "question-image"
-          }
+          src={question.image_url2}
+          alt="問題の図表(2枚目)"
+          className={imageClass}
         />
       )}
 
