@@ -1,9 +1,9 @@
 /**
  * ファイル: app/globals.css
- * バージョン: v1.8
- * 更新日: 2026-08-09
- * 内容: 記述式(essay)問題向けに .question-text(改行反映)と
- *      .question-image-wide(工程表など横長図表の幅いっぱい表示)を追加
+ * バージョン: v1.9
+ * 更新日: 2026-08-10
+ * 内容: 間違えた問題一覧の改修に伴い .status-wrong-count(間違い回数バッジ)と
+ *      .nav-btn-clear(一覧から消すボタン)を追加
  */
 
 body {
@@ -122,6 +122,13 @@ a {
   font-size: 14px;
 }
 
+.nav-btn-clear {
+  background: #e8f5e9;
+  border: 1px solid #2e7d32;
+  color: #2e7d32;
+  font-weight: bold;
+}
+
 .question-number {
   font-size: 13px;
   color: #888;
@@ -213,6 +220,17 @@ a {
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 10px;
+}
+
+.status-wrong-count {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #c62828;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: bold;
+  margin: 0 0 6px 0;
 }
 
 .status-wrong-meta {
