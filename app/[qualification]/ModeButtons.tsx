@@ -1,9 +1,10 @@
 /**
  * ファイル: app/[qualification]/ModeButtons.tsx
- * バージョン: v0.8
+ * バージョン: v0.9
  * 更新日: 2026-08-10
- * 内容: 「続きの問題」で、前回中止した位置(localStorageのkakomon_resume_*)があれば
- *      そこから再開できるように変更。確認パネルに「最初から始める」も併設。
+ * 内容: 「間違えた問題」の判定を学習状況ページと統一。最新解答による自動除外をやめ、
+ *      review_clearsで消した日時より後に不正解があるものを対象とし、間違えた回数の
+ *      多い順に並べる。起動時に from=wrong を付与しクリアボタンを出せるようにした。
  */
 
 "use client";
@@ -120,23 +121,50 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
         answered = answeredSet.size;
         targetIds = poolIds.filter((id) => !answeredSet.has(id)).sort((a, b) => a - b);
       } else if (m === "wrong") {
-        const { data } = await supabase
-          .from("attempts")
-          .select("question_id, is_correct, answered_at")
-          .eq("user_id", userId)
-          .in("question_id", poolIds)
-          .order("answered_at", { ascending: false });
+        // 学習状況ページと同じ判定にする:
+        // 消した日時(review_clears.cleared_at)より後に不正解があるものを対象とし、
+        // 間違えた回数の多い順に並べる。
+        const [attemptsRes, clearsRes] = await Promise.all([
+          supabase
+            .from("attempts")
+            .select("question_id, is_correct, answered_at")
+            .eq("user_id", userId)
+            .in("question_id", poolIds),
+          supabase
+            .from("review_clears")
+            .select("question_id, cleared_at")
+            .eq("user_id", userId),
+        ]);
 
-        const latestByQuestion = new Map<number, boolean>();
-        for (const a of data ?? []) {
-          if (!latestByQuestion.has(a.question_id)) {
-            latestByQuestion.set(a.question_id, a.is_correct);
+        const clearedMap = new Map<number, number>();
+        (clearsRes.data ?? []).forEach((c) => {
+          clearedMap.set(c.question_id, new Date(c.cleared_at).getTime());
+        });
+
+        const wrongMap = new Map<number, { count: number; lastWrongAt: number }>();
+        (attemptsRes.data ?? []).forEach((a) => {
+          if (a.is_correct) return;
+          const at = new Date(a.answered_at).getTime();
+          const prev = wrongMap.get(a.question_id);
+          if (prev) {
+            prev.count++;
+            if (at > prev.lastWrongAt) prev.lastWrongAt = at;
+          } else {
+            wrongMap.set(a.question_id, { count: 1, lastWrongAt: at });
           }
-        }
-        targetIds = Array.from(latestByQuestion.entries())
-          .filter(([, isCorrect]) => !isCorrect)
-          .map(([qid]) => qid)
-          .sort((a, b) => a - b);
+        });
+
+        targetIds = Array.from(wrongMap.entries())
+          .filter(([qid, w]) => {
+            const clearedAt = clearedMap.get(qid);
+            if (clearedAt === undefined) return true;
+            return w.lastWrongAt > clearedAt;
+          })
+          .sort(
+            (a, b) =>
+              b[1].count - a[1].count || b[1].lastWrongAt - a[1].lastWrongAt
+          )
+          .map(([qid]) => qid);
       }
     }
 
@@ -221,6 +249,9 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
       router.push(`/${qualification}/list?${qs.toString()}`);
       return;
     }
+    // 間違えた問題モードでは、正解時に一覧から消せるようにする
+    if (mode === "wrong") qs.set("from", "wrong");
+
     clearResume();
     router.push(`/${qualification}/${confirmIds[0]}?${qs.toString()}`);
   };
@@ -330,6 +361,9 @@ export default function ModeButtons({ qualification, allQuestions }: Props) {
           <p className="mode-confirm-title">{MODE_LABEL[mode]}</p>
           {isResume && (
             <p className="mode-confirm-line">前回中止した位置から再開します</p>
+          )}
+          {mode === "wrong" && confirmIds.length > 0 && (
+            <p className="mode-confirm-line">間違えた回数の多い順に出題します</p>
           )}
           <p className="mode-confirm-line">
             {mode === "continue" || mode === "wrong" ? "次に解く範囲" : "絞り込み中"}:{" "}
