@@ -1,10 +1,10 @@
 /**
- * app/admin/upload/page.tsx - 問題画像アップロード画面
- * v0.2.0  2026-07-26  未アップロード問題(needs_image=true かつ image_url未設定)を自動一覧表示し、
- *                     各問題ごとにファイル選択→アップロードするとその場でquestions.image_urlに紐付け保存。
- *                     トップページへの「戻る」リンクを追加。
- *
- * ディレクトリ: app/admin/upload/page.tsx(既存・上書き)
+ * ファイル: app/admin/upload/page.tsx
+ * バージョン: v0.3.0
+ * 更新日: 2026-08-11
+ * 内容: 2枚目画像に対応。1問につき未設定の枠(1枚目/2枚目)ごとにファイル選択欄を表示し、
+ *       アップロード時に slot を送る。成功後は一覧を再取得し、
+ *       まだ未設定の枠が残っている問題はカードを残す。
  */
 
 "use client"
@@ -18,12 +18,15 @@ type PendingQuestion = {
   exam_round: string
   question_no: number
   question_text: string
+  image_url: string | null
+  image_url2: string | null
+  needs_image2: boolean | null
 }
 
 export default function UploadPage() {
   const [pending, setPending] = useState<PendingQuestion[]>([])
   const [loading, setLoading] = useState(true)
-  const [uploadingId, setUploadingId] = useState<string | null>(null)
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null)
   const [error, setError] = useState("")
 
   const loadPending = async () => {
@@ -48,8 +51,17 @@ export default function UploadPage() {
     loadPending()
   }, [])
 
-  const handleUpload = (questionId: string, file: File) => {
-    setUploadingId(questionId)
+  /** その問題で未設定の枠を返す */
+  const emptySlots = (q: PendingQuestion) => {
+    const slots: { slot: number; label: string }[] = []
+    if (!q.image_url) slots.push({ slot: 1, label: "1枚目" })
+    if (q.needs_image2 && !q.image_url2) slots.push({ slot: 2, label: "2枚目" })
+    return slots
+  }
+
+  const handleUpload = (questionId: string, slot: number, file: File) => {
+    const key = `${questionId}-${slot}`
+    setUploadingKey(key)
     setError("")
 
     const reader = new FileReader()
@@ -59,19 +71,19 @@ export default function UploadPage() {
         const res = await fetch("/api/upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ base64, fileName: file.name, questionId }),
+          body: JSON.stringify({ base64, fileName: file.name, questionId, slot }),
         })
         const data = await res.json()
         if (!res.ok) {
           setError(data.error || "アップロードに失敗しました")
+          setUploadingKey(null)
         } else {
-          // 成功したら一覧から即座に除去
-          setPending((prev) => prev.filter((q) => q.id !== questionId))
+          setUploadingKey(null)
+          await loadPending()
         }
       } catch (e: any) {
         setError(e?.message || "アップロードに失敗しました")
-      } finally {
-        setUploadingId(null)
+        setUploadingKey(null)
       }
     }
     reader.readAsDataURL(file)
@@ -110,16 +122,24 @@ export default function UploadPage() {
           <p style={{ fontSize: 13, color: "#666", marginBottom: 12 }}>
             {q.question_text.slice(0, 40)}...
           </p>
-          <input
-            type="file"
-            accept="image/*"
-            disabled={uploadingId === q.id}
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) handleUpload(q.id, file)
-            }}
-          />
-          {uploadingId === q.id && <p style={{ fontSize: 12 }}>アップロード中...</p>}
+
+          {emptySlots(q).map(({ slot, label }) => (
+            <div key={slot} style={{ marginBottom: 12 }}>
+              <p style={{ fontSize: 13, marginBottom: 4 }}>{label}</p>
+              <input
+                type="file"
+                accept="image/*"
+                disabled={uploadingKey === `${q.id}-${slot}`}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleUpload(q.id, slot, file)
+                }}
+              />
+              {uploadingKey === `${q.id}-${slot}` && (
+                <p style={{ fontSize: 12 }}>アップロード中...</p>
+              )}
+            </div>
+          ))}
         </div>
       ))}
     </div>
