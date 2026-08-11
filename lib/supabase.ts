@@ -1,9 +1,10 @@
 /**
  * ファイル: lib/supabase.ts
- * バージョン: v1.1
- * 更新日: 2026-08-10
- * 内容: Question型にshuffle_choices(選択肢をシャッフルするかどうかのフラグ)を追加。
- *      正解が特定番号に偏っている問題群(漢字検定・食生活アドバイザー3級オリジナル問題)のみtrue。
+ * バージョン: v1.2
+ * 更新日: 2026-08-11
+ * 内容: Question型にimage_url2(2枚目の図表画像)を追加。
+ *      建築施工管理技士二級 令和7年度 第二次検定の問題1で、配置図+工程表と
+ *      工事概要表の2枚を1問に紐付けるために使用する。
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -36,5 +37,6 @@ export type Question = {
   translation: string | null;
   audio_url: string | null;
   image_url: string | null;
+  image_url2: string | null;
   shuffle_choices: boolean;
 };
