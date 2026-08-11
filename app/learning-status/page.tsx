@@ -1,9 +1,9 @@
 /**
  * ファイル: app/learning-status/page.tsx
- * バージョン: v1.9
+ * バージョン: v2.0
  * 更新日: 2026-08-10
- * 内容: 解き直しリンクに back=<現在のURL> を付与し、解答後に元の学習状況ページ
- *      (資格の絞り込み・ユーザー選択を含む)へ正しく戻れるようにした。
+ * 内容: 解説が長文のため一覧では折りたたみ表示に変更(タップで開閉)。
+ *      問題文も長い場合は先頭のみ表示し、全文は解き直し画面で読む形にした。
  */
 
 "use client";
@@ -200,6 +200,10 @@ function LearningStatusContent() {
 
   const viewUserName = users.find((u) => u.id === viewUserId)?.name ?? "";
 
+  /** 長い問題文は先頭のみ表示する */
+  const preview = (text: string, len = 80) =>
+    text.length > len ? `${text.slice(0, len)}…` : text;
+
   const buildUserHref = (uid: number) => {
     const qs = new URLSearchParams();
     if (filterQualification) qs.set("qualification", filterQualification);
@@ -291,7 +295,7 @@ function LearningStatusContent() {
             戻る
           </Link>
           <span>{today}</span>
-          <span>v1.9</span>
+          <span>v2.0</span>
         </div>
         <div className="status-header-path">app/learning-status/page.tsx</div>
       </header>
@@ -373,12 +377,15 @@ function LearningStatusContent() {
                   {w.question.qualification} / {w.question.exam_round} /{" "}
                   {w.question.theme}
                 </p>
-                <p>{w.question.question_text}</p>
+                <p>{preview(w.question.question_text)}</p>
                 {w.question.explanation && (
-                  <p
-                    className="status-wrong-meta"
-                    dangerouslySetInnerHTML={{ __html: w.question.explanation }}
-                  />
+                  <details className="status-explanation">
+                    <summary>解説を見る</summary>
+                    <div
+                      className="status-explanation-body"
+                      dangerouslySetInnerHTML={{ __html: w.question.explanation }}
+                    />
+                  </details>
                 )}
                 <Link href={buildRetryHref(w.question)} className="choice-btn">
                   この問題を解き直す
