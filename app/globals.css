@@ -1,9 +1,9 @@
 /**
  * ファイル: app/globals.css
- * バージョン: v1.9
+ * バージョン: v2.0
  * 更新日: 2026-08-10
- * 内容: 間違えた問題一覧の改修に伴い .status-wrong-count(間違い回数バッジ)と
- *      .nav-btn-clear(一覧から消すボタン)を追加
+ * 内容: 未定義だった .nav-btn-stop(中止ボタン)、.listening-hint(リスニングの案内文)、
+ *      .translation-box(日本語訳の表示枠)を追加
  */
 
 body {
@@ -82,6 +82,25 @@ a {
   background: #fff;
 }
 
+.listening-hint {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f0f4f8;
+  color: #556;
+  font-size: 14px;
+  margin: 0 0 12px 0;
+}
+
+.translation-box {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f7f7f8;
+  border: 1px solid #e0e0e0;
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 8px 0;
+}
+
 .audio-bar {
   position: fixed;
   bottom: 0;
@@ -120,6 +139,12 @@ a {
   border-radius: 999px;
   background: #eee;
   font-size: 14px;
+}
+
+.nav-btn-stop {
+  background: #fff;
+  border: 1px solid #c9a0a0;
+  color: #a04040;
 }
 
 .nav-btn-clear {
