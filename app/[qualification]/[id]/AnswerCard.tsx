@@ -1,10 +1,9 @@
 /**
  * ファイル: app/[qualification]/[id]/AnswerCard.tsx
- * バージョン: v3.1
+ * バージョン: v3.2
  * 更新日: 2026-08-10
- * 内容: 学習状況の「間違えた問題一覧」から来た場合(from=review)、正解時に
- *      「一覧から消す」ボタンを表示しreview_clearsへ記録して学習状況へ戻る。
- *      不正解時および解答前は「学習状況へ戻る」ボタンのみ表示する。
+ * 内容: 学習状況ページへ戻る際に qualification をクエリに引き継ぎ、
+ *      資格で絞り込んだ状態が維持されるようにした。
  */
 
 "use client";
@@ -75,6 +74,11 @@ export default function AnswerCard({
 
   /** correct_answerをnull安全な数値に正規化 */
   const correctNum: number = question.correct_answer ?? 0;
+
+  /** 学習状況ページのURL(資格の絞り込みを引き継ぐ) */
+  const statusHref = `/learning-status?qualification=${encodeURIComponent(
+    qualification
+  )}`;
 
   const rawChoices = [
     question.choice_1,
@@ -183,7 +187,7 @@ export default function AnswerCard({
   const handleClearFromReview = async () => {
     const userId = localStorage.getItem("kakomon_user_id");
     if (!userId) {
-      router.push("/learning-status");
+      router.push(statusHref);
       return;
     }
     setClearing(true);
@@ -195,11 +199,11 @@ export default function AnswerCard({
       },
       { onConflict: "user_id,question_id" }
     );
-    router.push("/learning-status");
+    router.push(statusHref);
   };
 
   /** 消さずに学習状況へ戻る */
-  const handleBackToStatus = () => router.push("/learning-status");
+  const handleBackToStatus = () => router.push(statusHref);
 
   /**
    * 中止してモード選択画面へ戻る。
