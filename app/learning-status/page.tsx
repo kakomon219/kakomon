@@ -1,10 +1,9 @@
 /**
  * ファイル: app/learning-status/page.tsx
- * バージョン: v1.8
+ * バージョン: v1.9
  * 更新日: 2026-08-10
- * 内容: 間違えた問題一覧を「解答ごと」から「問題ごと」に集約。累計の間違い回数を表示し、
- *      回数の多い順に並べる。review_clearsで一度消した問題は非表示にし、消した日時より後に
- *      再度間違えた場合は自動で再表示する。解き直しリンクに from=review を付与。
+ * 内容: 解き直しリンクに back=<現在のURL> を付与し、解答後に元の学習状況ページ
+ *      (資格の絞り込み・ユーザー選択を含む)へ正しく戻れるようにした。
  */
 
 "use client";
@@ -64,6 +63,7 @@ function LearningStatusContent() {
   const [wrongList, setWrongList] = useState<WrongItem[]>([]);
   const [today, setToday] = useState("");
   const [copied, setCopied] = useState(false);
+  const [backUrl, setBackUrl] = useState("/learning-status");
 
   // 表示対象ユーザーを決定(URL優先、なければ自分)
   useEffect(() => {
@@ -83,6 +83,11 @@ function LearningStatusContent() {
       setViewUserId(stored ? Number(stored) : null);
     }
   }, [paramUserId]);
+
+  // 現在のURL(絞り込み・ユーザー選択を含む)を戻り先として保持
+  useEffect(() => {
+    setBackUrl(window.location.pathname + window.location.search);
+  }, [searchParams]);
 
   // ユーザー一覧を取得
   useEffect(() => {
@@ -202,6 +207,14 @@ function LearningStatusContent() {
     return `/learning-status?${qs.toString()}`;
   };
 
+  /** 解き直しリンク(戻り先として現在のURLを渡す) */
+  const buildRetryHref = (q: QuestionRow) => {
+    const qs = new URLSearchParams();
+    qs.set("from", "review");
+    qs.set("back", backUrl);
+    return `/${q.qualification}/${q.id}?${qs.toString()}`;
+  };
+
   const buildFullSummaryText = () => {
     const lines: string[] = [];
     lines.push(`学習状況レポート (${today})`);
@@ -278,7 +291,7 @@ function LearningStatusContent() {
             戻る
           </Link>
           <span>{today}</span>
-          <span>v1.8</span>
+          <span>v1.9</span>
         </div>
         <div className="status-header-path">app/learning-status/page.tsx</div>
       </header>
@@ -367,10 +380,7 @@ function LearningStatusContent() {
                     dangerouslySetInnerHTML={{ __html: w.question.explanation }}
                   />
                 )}
-                <Link
-                  href={`/${w.question.qualification}/${w.question.id}?from=review`}
-                  className="choice-btn"
-                >
+                <Link href={buildRetryHref(w.question)} className="choice-btn">
                   この問題を解き直す
                 </Link>
               </div>
