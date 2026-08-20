@@ -1,9 +1,11 @@
 /**
  * ファイル: app/learning-status/page.tsx
- * バージョン: v2.0
- * 更新日: 2026-08-10
- * 内容: 解説が長文のため一覧では折りたたみ表示に変更(タップで開閉)。
- *      問題文も長い場合は先頭のみ表示し、全文は解き直し画面で読む形にした。
+ * バージョン: v2.1
+ * 更新日: 2026-08-21
+ * 内容: 「日別の学習記録」を追加。いつ・何問解いたかを日付ごとに集計して表示する。
+ *      間違えた問題一覧にも最後に間違えた日時を表示。
+ *      深夜の解答をどの日に含めるかは DAY_START_HOUR で調整する。
+ * 前版: v2.0 解説が長文のため一覧では折りたたみ表示に変更(タップで開閉)。
  */
 
 "use client";
@@ -43,6 +45,53 @@ type ThemeStat = { total: number; correct: number };
 type RoundStat = { total: number; correct: number; themes: Record<string, ThemeStat> };
 type QualStat = { total: number; correct: number; rounds: Record<string, RoundStat> };
 
+type DayStat = {
+  key: string; // YYYY-MM-DD (並び替え用)
+  label: string; // 2026/08/21(木)
+  total: number;
+  correct: number;
+  firstAt: number;
+  lastAt: number;
+  quals: Record<string, { total: number; correct: number }>;
+};
+
+/**
+ * 1日の区切り(時)。
+ * 4 にすると 深夜0:00〜3:59 の解答は前日の記録として数える。
+ * 0時ちょうどで区切りたい場合は 0 にする。
+ */
+const DAY_START_HOUR = 4;
+
+/** 解答日時を「学習日」に丸める(DAY_START_HOUR より前は前日扱い) */
+function toStudyDay(iso: string): { key: string; label: string } {
+  const d = new Date(iso);
+  d.setHours(d.getHours() - DAY_START_HOUR);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const w = ["日", "月", "火", "水", "木", "金", "土"][d.getDay()];
+  return { key: `${y}-${m}-${day}`, label: `${y}/${m}/${day}(${w})` };
+}
+
+/** 時刻を HH:MM で表示 */
+function fmtTime(ms: number): string {
+  return new Date(ms).toLocaleTimeString("ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** 日時を YYYY/MM/DD HH:MM で表示 */
+function fmtDateTime(ms: number): string {
+  return new Date(ms).toLocaleString("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function LearningStatusPage() {
   return (
     <Suspense fallback={<div className="card">読み込み中...</div>}>
@@ -60,6 +109,7 @@ function LearningStatusContent() {
   const [viewUserId, setViewUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [tree, setTree] = useState<Record<string, QualStat>>({});
+  const [dayList, setDayList] = useState<DayStat[]>([]);
   const [wrongList, setWrongList] = useState<WrongItem[]>([]);
   const [today, setToday] = useState("");
   const [copied, setCopied] = useState(false);
@@ -146,6 +196,7 @@ function LearningStatusContent() {
       });
 
       const newTree: Record<string, QualStat> = {};
+      const dayMap = new Map<string, DayStat>();
       const wrongMap = new Map<number, WrongItem>();
 
       (attemptsRes.data as unknown as AttemptRow[]).forEach((a) => {
@@ -166,6 +217,32 @@ function LearningStatusContent() {
         themes[q.theme] ??= { total: 0, correct: 0 };
         themes[q.theme].total++;
         if (a.is_correct) themes[q.theme].correct++;
+
+        // 日別集計
+        if (a.answered_at) {
+          const at = new Date(a.answered_at).getTime();
+          const { key, label } = toStudyDay(a.answered_at);
+          let day = dayMap.get(key);
+          if (!day) {
+            day = {
+              key,
+              label,
+              total: 0,
+              correct: 0,
+              firstAt: at,
+              lastAt: at,
+              quals: {},
+            };
+            dayMap.set(key, day);
+          }
+          day.total++;
+          if (a.is_correct) day.correct++;
+          if (at < day.firstAt) day.firstAt = at;
+          if (at > day.lastAt) day.lastAt = at;
+          day.quals[q.qualification] ??= { total: 0, correct: 0 };
+          day.quals[q.qualification].total++;
+          if (a.is_correct) day.quals[q.qualification].correct++;
+        }
 
         if (!a.is_correct) {
           const at = new Date(a.answered_at).getTime();
@@ -191,12 +268,17 @@ function LearningStatusContent() {
         );
 
       setTree(newTree);
+      setDayList(
+        Array.from(dayMap.values()).sort((a, b) => (a.key < b.key ? 1 : -1))
+      );
       setWrongList(newWrongList);
       setLoading(false);
     })();
   }, [viewUserId, filterQualification]);
 
   const rate = (c: number, t: number) => (t > 0 ? Math.round((c / t) * 100) : 0);
+
+  const totalAnswered = dayList.reduce((sum, d) => sum + d.total, 0);
 
   const viewUserName = users.find((u) => u.id === viewUserId)?.name ?? "";
 
@@ -237,6 +319,16 @@ function LearningStatusContent() {
       lines.push("");
     });
 
+    if (dayList.length > 0) {
+      lines.push(`■ 日別の学習記録 (${dayList.length}日 / 合計${totalAnswered}問)`);
+      dayList.forEach((d) => {
+        lines.push(
+          `  ${d.label}  ${d.total}問  正答率 ${rate(d.correct, d.total)}% (${d.correct}/${d.total})  ${fmtTime(d.firstAt)}〜${fmtTime(d.lastAt)}`
+        );
+      });
+      lines.push("");
+    }
+
     if (wrongList.length > 0) {
       lines.push(`■ 間違えた問題 (${wrongList.length}問)`);
       wrongList.forEach((w, i) => {
@@ -267,6 +359,17 @@ function LearningStatusContent() {
       lines.push("");
     });
 
+    if (dayList.length > 0) {
+      lines.push(`■ 直近の学習記録 (全${dayList.length}日 / 合計${totalAnswered}問)`);
+      dayList.slice(0, 14).forEach((d) => {
+        lines.push(
+          `  ${d.label}  ${d.total}問  正答率 ${rate(d.correct, d.total)}%`
+        );
+      });
+      if (dayList.length > 14) lines.push("  (以前の分はアプリでご確認ください)");
+      lines.push("");
+    }
+
     lines.push(`間違えた問題数: ${wrongList.length}問(詳細はアプリでご確認ください)`);
     return lines.join("\n");
   };
@@ -295,7 +398,7 @@ function LearningStatusContent() {
             戻る
           </Link>
           <span>{today}</span>
-          <span>v2.0</span>
+          <span>v2.1</span>
         </div>
         <div className="status-header-path">app/learning-status/page.tsx</div>
       </header>
@@ -334,6 +437,39 @@ function LearningStatusContent() {
         <div className="card">読み込み中...</div>
       ) : (
         <>
+          <div className="card">
+            <h2>日別の学習記録</h2>
+            {dayList.length === 0 ? (
+              <p>まだ解答履歴がありません。</p>
+            ) : (
+              <>
+                <p className="status-day-summary">
+                  学習日数 {dayList.length}日 / 合計 {totalAnswered}問
+                </p>
+                {dayList.map((d) => (
+                  <details key={d.key} className="status-day">
+                    <summary>
+                      <span className="status-day-date">{d.label}</span>
+                      <span className="status-day-count">{d.total}問</span>
+                      <span className="status-day-rate">
+                        正答率 {rate(d.correct, d.total)}% ({d.correct}/{d.total})
+                      </span>
+                    </summary>
+                    <div className="status-day-time">
+                      {fmtTime(d.firstAt)} 〜 {fmtTime(d.lastAt)}
+                    </div>
+                    {Object.entries(d.quals).map(([qual, s]) => (
+                      <div key={qual} className="status-theme-line">
+                        {qual} - {s.total}問 正答率 {rate(s.correct, s.total)}% (
+                        {s.correct}/{s.total})
+                      </div>
+                    ))}
+                  </details>
+                ))}
+              </>
+            )}
+          </div>
+
           <div className="card">
             <h2>分野別 正答率</h2>
             {Object.keys(tree).length === 0 && <p>まだ解答履歴がありません。</p>}
@@ -376,6 +512,9 @@ function LearningStatusContent() {
                 <p className="status-wrong-meta">
                   {w.question.qualification} / {w.question.exam_round} /{" "}
                   {w.question.theme}
+                </p>
+                <p className="status-wrong-meta">
+                  最後に間違えた: {fmtDateTime(w.lastWrongAt)}
                 </p>
                 <p>{preview(w.question.question_text)}</p>
                 {w.question.explanation && (
