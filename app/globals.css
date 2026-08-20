@@ -1,8 +1,9 @@
 /**
  * ファイル: app/globals.css
- * バージョン: v2.1
- * 更新日: 2026-08-10
- * 内容: 間違えた問題一覧の解説折りたたみ用(.status-explanation)と、
+ * バージョン: v2.2
+ * 更新日: 2026-08-21
+ * 内容: 日別の学習記録用スタイル(.status-day 系)を追加
+ * 前版: v2.1 間違えた問題一覧の解説折りたたみ用(.status-explanation)と、
  *      一覧から消した旨の表示(.cleared-note)を追加
  */
 
@@ -219,6 +220,54 @@ a {
   font-size: 0.7rem;
   color: #999;
   word-break: break-all;
+}
+
+.status-day-summary {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0 0 10px 0;
+}
+
+.status-day {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.status-day > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.status-day-date {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.status-day-count {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #1565c0;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.status-day-rate {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.status-day-time {
+  margin: 8px 0 4px 0;
+  font-size: 0.75rem;
+  color: #888;
 }
 
 .status-block {
