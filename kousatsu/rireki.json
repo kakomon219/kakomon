@@ -1,0 +1,74 @@
+{
+  "name": "kakomon219/kakomon",
+  "head": "9cfaa31",
+  "ref": "origin/main",
+  "tool_version": "1.2.0",
+  "collected_at": "2026-09-12",
+  "first_day": "2026-07-25",
+  "last_day": "2026-08-21",
+  "span_days": 28,
+  "active_days": 13,
+  "commits": 147,
+  "merges": 0,
+  "claude_commits": 0,
+  "first_claude_day": null,
+  "files": 32,
+  "months": [
+    {
+      "m": "2026-07",
+      "all": 94,
+      "claude": 0
+    },
+    {
+      "m": "2026-08",
+      "all": 53,
+      "claude": 0
+    }
+  ],
+  "busiest": [
+    {
+      "d": "2026-07-26",
+      "n": 46
+    },
+    {
+      "d": "2026-07-25",
+      "n": 30
+    },
+    {
+      "d": "2026-08-10",
+      "n": 20
+    }
+  ],
+  "gaps": [
+    {
+      "from": "2026-08-13",
+      "to": "2026-08-21",
+      "days": 7
+    }
+  ],
+  "authors": [
+    {
+      "name": "kakomon219",
+      "n": 147
+    }
+  ],
+  "models": [],
+  "dirs": [
+    {
+      "name": "app/",
+      "n": 18
+    },
+    {
+      "name": "(直下)",
+      "n": 6
+    },
+    {
+      "name": "hikitugi/",
+      "n": 6
+    },
+    {
+      "name": "lib/",
+      "n": 2
+    }
+  ]
+}

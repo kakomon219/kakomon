@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<!--
+  kousatsu/rireki.html — kakomon219/kakomon の歩み
+
+  ★このファイルは手で書かない。kousatsu/rireki.mjs が作り直す。
+    直したいときはスクリプトのほうを直して走らせ直すこと。
+
+  ★スクリプトの正は外にある：https://www.pensions-yoyaku.com/kousatsu/tool.html
+    ここにあるのは配られたコピー（橋渡し版 v1.2.0）。
+    直したいことが出たら、まず上のURLを直してから配り直す。
+
+  枝番：中身が変わったときだけ rireki<日付><文字>.html を足す。古い版は上書きしない。
+-->
+<title>kakomon219/kakomon の歩み</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ink:#1a1a1a; --ink-soft:#55504a; --ink-faint:#8a8378;
+    --ground:#faf8f4; --surface:#ffffff; --rule:#e2dbcf; --rule-soft:#efeae0;
+    --gold:#a6832f; --gold-mark:#c9a84c; --gold-pale:#e6d5a4; --gold-wash:#f0e7cf;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink:#ece7dc; --ink-soft:#a8a196; --ink-faint:#756e63;
+      --ground:#16150f; --surface:#1e1c16; --rule:#383327; --rule-soft:#292519;
+      --gold:#d4b45f; --gold-mark:#c9a84c; --gold-pale:#5d5133; --gold-wash:#2e2817;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink:#ece7dc; --ink-soft:#a8a196; --ink-faint:#756e63;
+    --ground:#16150f; --surface:#1e1c16; --rule:#383327; --rule-soft:#292519;
+    --gold:#d4b45f; --gold-mark:#c9a84c; --gold-pale:#5d5133; --gold-wash:#2e2817;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--ground); color:var(--ink); font-size:15px; line-height:1.9;
+         font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;
+         -webkit-text-size-adjust:100%; }
+  .mono { font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+          font-variant-numeric:tabular-nums; }
+  .wrap { max-width:720px; margin:0 auto; padding-inline:20px; padding-block:40px 96px; }
+  .eyebrow { margin:0; font-family:"IBM Plex Mono",monospace; font-size:10.5px;
+             letter-spacing:.22em; text-transform:uppercase; color:var(--gold); }
+  h1 { margin:12px 0 0; font-family:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+       font-weight:600; font-size:clamp(25px,6vw,34px); line-height:1.45; letter-spacing:.01em;
+       text-wrap:balance; word-break:break-all; }
+  .lede { margin:16px 0 0; color:var(--ink-soft); font-size:15.5px; }
+  h2 { margin:52px 0 0; padding-bottom:10px; border-bottom:1px solid var(--rule);
+       font-family:"Shippori Mincho","Hiragino Mincho ProN",serif;
+       font-weight:600; font-size:19px; letter-spacing:.02em; }
+  .totals { margin:26px 0 0; display:grid; grid-template-columns:repeat(auto-fit,minmax(136px,1fr));
+            gap:1px; background:var(--rule-soft); border:1px solid var(--rule); }
+  .tot { background:var(--surface); padding:14px 14px 16px; }
+  .tot dt { font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.14em;
+            text-transform:uppercase; color:var(--ink-faint); }
+  .tot dd { margin:4px 0 0; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;
+            font-weight:500; font-size:21px; line-height:1.25; }
+  .tot dd small { font-size:11.5px; font-weight:400; color:var(--ink-faint); }
+  .months { margin:24px 0 0; padding:16px 14px 12px; background:var(--surface);
+            border:1px solid var(--rule); }
+  .mo-row { display:flex; align-items:flex-end; gap:6px; overflow-x:auto; padding-bottom:2px; }
+  .mo { flex:1 1 0; min-width:28px; text-align:center; }
+  .mo-stack { display:flex; align-items:flex-end; justify-content:center; height:64px; }
+  .mo-bar { width:100%; max-width:26px; background:var(--gold-pale); display:flex; align-items:flex-end; }
+  .mo-cl { width:100%; background:var(--gold-mark); }
+  .mo-n { margin-top:5px; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;
+          font-size:10px; color:var(--ink-soft); }
+  .mo-l { font-family:"IBM Plex Mono",monospace; font-size:9.5px; color:var(--ink-faint); }
+  .cap { margin:10px 0 0; font-size:11.5px; color:var(--ink-faint); line-height:1.7; }
+  .cols { margin:24px 0 0; display:grid; grid-template-columns:repeat(auto-fit,minmax(196px,1fr));
+          gap:20px 24px; }
+  .cols h3 { margin:0 0 6px; padding-bottom:5px; border-bottom:1px solid var(--rule);
+             font-family:"Shippori Mincho","Hiragino Mincho ProN",serif;
+             font-weight:600; font-size:14px; letter-spacing:.02em; }
+  ul.plain { list-style:none; margin:0; padding:0; }
+  ul.plain li { display:flex; gap:10px; align-items:baseline; padding:4px 0; font-size:13px;
+                border-bottom:1px solid var(--rule-soft); }
+  ul.plain li span { flex:1 1 auto; min-width:0; overflow-wrap:anywhere; color:var(--ink-soft); }
+  ul.plain li b { font-weight:500; font-size:12.5px; }
+  .warn { margin:24px 0 0; padding:18px 20px 20px; background:var(--surface);
+          border:1px solid var(--rule); border-left:3px solid var(--gold-mark); }
+  .warn h3 { margin:0; font-family:"Shippori Mincho","Hiragino Mincho ProN",serif;
+             font-weight:600; font-size:16px; line-height:1.6; }
+  .warn p { margin:9px 0 0; font-size:14.5px; color:var(--ink-soft); }
+  .warn p strong { color:var(--ink); font-weight:600; }
+  .tablewrap { overflow-x:auto; margin-top:14px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  th,td { text-align:left; padding:7px 12px 7px 0; border-bottom:1px solid var(--rule-soft);
+          white-space:nowrap; }
+  th { font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.12em;
+       text-transform:uppercase; color:var(--ink-faint); font-weight:500; }
+  td.num { font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;
+           text-align:right; padding-right:0; }
+  footer { margin:52px 0 0; padding-top:18px; border-top:1px solid var(--rule);
+           font-size:12.5px; color:var(--ink-faint); }
+  footer p { margin:0 0 7px; }
+  code { font-family:"IBM Plex Mono",monospace; font-size:.88em; background:var(--gold-wash);
+         padding:1px 5px; border-radius:2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">git log &middot; 2026-07-25 → 2026-08-21</p>
+  <h1>kakomon219/kakomon の歩み</h1>
+  <p class="lede">
+    2026-07-25 から 2026-08-21 までの 28日間に
+    147本のコミットがありました。手を入れた日は13日、
+    1日あたり11.3本。いまファイルは32本あります。
+  </p>
+
+  <dl class="totals">
+    <div class="tot"><dt>コミット</dt><dd>147</dd></div>
+    <div class="tot"><dt>手を入れた日</dt><dd>13<small> 日 / 28</small></dd></div>
+    <div class="tot"><dt>1日あたり</dt><dd>11.3<small> 本</small></dd></div>
+    <div class="tot"><dt>ファイル</dt><dd>32</dd></div>
+    <div class="tot"><dt>マージ</dt><dd>0</dd></div>
+    <div class="tot"><dt>Claude</dt><dd>0<small>% · 0本</small></dd></div>
+  </dl>
+
+  <h2>月ごと</h2>
+  <div class="months">
+    <div class="mo-row"><div class="mo">
+          <div class="mo-stack"><div class="mo-bar" style="height:64px"><div class="mo-cl" style="height:0px"></div></div></div>
+          <div class="mo-n">94</div>
+          <div class="mo-l">07</div>
+        </div>
+<div class="mo">
+          <div class="mo-stack"><div class="mo-bar" style="height:36px"><div class="mo-cl" style="height:0px"></div></div></div>
+          <div class="mo-n">53</div>
+          <div class="mo-l">08</div>
+        </div></div>
+    <p class="cap">
+      濃い部分が Claude の関わったぶん。Claude の関わったコミットはありません。<br>棒の高さはこのリポジトリの中だけの物差しです（いちばん高い月が 94 本）。
+    </p>
+  </div>
+
+  <div class="cols">
+    <section><h3>書いた人</h3><ul class="plain"><li><span>kakomon219</span><b class="mono">147</b></li></ul></section>
+    <section><h3>多いフォルダ</h3><ul class="plain"><li><span>app/</span><b class="mono">18</b></li><li><span>(直下)</span><b class="mono">6</b></li><li><span>hikitugi/</span><b class="mono">6</b></li><li><span>lib/</span><b class="mono">2</b></li></ul></section>
+    <section><h3>いちばん多い日</h3>
+      <ul class="plain"><li><span>2026-07-26</span><b class="mono">46</b></li><li><span>2026-07-25</span><b class="mono">30</b></li><li><span>2026-08-10</span><b class="mono">20</b></li></ul></section>
+  </div>
+
+  <h2>止まっていた期間</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>次に触るまで</th><th class="num" style="text-align:right">空いた日数</th></tr></thead>
+      <tbody><tr><td class="mono">2026-08-13 → 2026-08-21</td><td class="num">7</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="warn">
+    <h3>この数字だけで「休んでいた」と読まないこと</h3>
+    <p>
+      このページは<strong>このリポジトリ1つの話しかしていません。</strong>
+      28日のうち15日はここに何も入っていませんが、
+      その日に<strong>別のリポジトリを触っていることがあります。</strong>
+    </p>
+    <p>
+      実際に ryokan で同じ間違いをしました。「半分強の日は何もしていない」と書いたあと、
+      他のリポジトリを並べて数え直したら、空白の23日は別のものを作っていた日でした。
+      1つだけ見て読むと間違えます。
+    </p>
+  </div>
+
+  <footer>
+    <p>
+      数字は <code>git log</code> の実測です。コミット数は author date で数えています
+      （committer date だと merge の分がずれます）。
+      「Claude」は作者名が Claude か、本文に <code>Co-Authored-By: Claude</code> があるものの数です。
+    </p>
+    <p>
+      origin/main @ 9cfaa31 を 2026-09-12 に数えました。
+    </p>
+    <p>
+      このページは <code>kousatsu/rireki.mjs</code>（橋渡し版 v1.2.0）が作っています。
+      手で直さないでください。スクリプトの正は <code>https://www.pensions-yoyaku.com/kousatsu/tool.html</code> にあります。
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>
